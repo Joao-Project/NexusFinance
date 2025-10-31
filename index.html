@@ -4024,60 +4024,45 @@ async function addTransaction(type) {
 // FIM DA FUNÇÃO addTransaction(type)
 
 // INÍCIO DA FUNÇÃO deleteTransaction()
-// FUNÇÃO deleteTransaction COMPLETAMENTE CORRIGIDA
+// FUNÇÃO deleteTransaction COMPLETA E CORRIGIDA
 async function deleteTransaction(transactionId) {
-    console.log('🗑️ Tentando deletar transação:', transactionId);
+    console.log('🗑️ Deletando transação:', transactionId);
+    
+    if (!confirm('Tem certeza que deseja excluir esta transação?')) {
+        return;
+    }
     
     if (!currentUser) {
         showNotification('Não foi possível deletar. Usuário não autenticado.', 'error');
         return;
     }
     
-    if (!confirm('Tem certeza que deseja excluir esta transação?')) {
-        return;
-    }
-    
     const userId = currentUser.uid;
 
     try {
-        console.log('🔥 Iniciando deleção no Firestore...');
+        console.log('🔥 Deletando do Firestore...');
         
-        // 1. Deleta o documento no Firestore
+        // 1. DELETA DO FIRESTORE
         await db.collection('users').doc(userId).collection('transactions').doc(transactionId).delete();
+        
+        console.log('✅ Deletado do Firestore com sucesso!');
 
-        console.log('✅ Transação deletada do Firestore com sucesso');
-
-        // 2. Remove o item da array local 'transactions' (atualiza o cache local)
+        // 2. DELETA LOCALMENTE
         transactions = transactions.filter(t => t.id !== transactionId);
         
-        console.log('🔄 Array local atualizado. Transações restantes:', transactions.length);
-
-        // 3. Atualiza o localStorage também (como backup)
+        // 3. ATUALIZA LOCALSTORAGE (backup)
         const userKey = `nexusFinanceTransactions_${currentUser.email}`;
         localStorage.setItem(userKey, JSON.stringify(transactions));
-
-        // 4. Atualiza a UI
+        
+        // 4. ATUALIZA A UI
         updateTransactionsList();
         updateDashboardStats();
         
-        showNotification('Transação removida com sucesso!', 'success');
+        showNotification('Transação excluída com sucesso!', 'warning');
         
     } catch (error) {
-        console.error("❌ Erro ao deletar transação do Firestore:", error);
-        
-        // Tentativa de fallback: remover apenas localmente
-        try {
-            transactions = transactions.filter(t => t.id !== transactionId);
-            const userKey = `nexusFinanceTransactions_${currentUser.email}`;
-            localStorage.setItem(userKey, JSON.stringify(transactions));
-            
-            updateTransactionsList();
-            updateDashboardStats();
-            
-            showNotification('Transação removida localmente (erro de conexão)', 'warning');
-        } catch (fallbackError) {
-            showNotification("Erro completo ao remover transação", "error");
-        }
+        console.error("❌ Erro ao deletar transação:", error);
+        showNotification("Erro ao remover transação: " + error.message, "error");
     }
 }
 // FIM DA FUNÇÃO setupTransactions()
