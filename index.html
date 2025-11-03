@@ -4920,56 +4920,6 @@ async function addInvestment() {
             document.getElementById('investmentProfitability').value = '0';
         }
 
-        function addInvestment() {
-            const name = document.getElementById('investmentName').value.trim();
-            const type = document.getElementById('investmentType').value;
-            const amount = parseFloat(document.getElementById('investmentAmount').value);
-            const profitability = document.getElementById('investmentProfitability').value;
-
-            if (!name || isNaN(amount) || amount <= 0) {
-                showNotification('Preencha todos os campos corretamente', 'error');
-                return;
-            }
-
-            const getIconAndColor = (type) => {
-                switch(type) {
-                    case 'Renda Fixa':
-                        return { icon: 'fas fa-landmark', color: 'rgba(0, 102, 255, 0.2)', iconColor: '#0066FF' };
-                    case 'Ações':
-                        return { icon: 'fas fa-chart-line', color: 'rgba(0, 212, 170, 0.2)', iconColor: '#00D4AA' };
-                    case 'ETF':
-                        return { icon: 'fas fa-chart-bar', color: 'rgba(255, 107, 53, 0.2)', iconColor: '#FF6B35' };
-                    case 'FII':
-                        return { icon: 'fas fa-building', color: 'rgba(155, 89, 182, 0.2)', iconColor: '#9B59B6' };
-                    case 'Criptomoedas':
-                        return { icon: 'fas fa-coins', color: 'rgba(255, 193, 7, 0.2)', iconColor: '#FFC107' };
-                    default:
-                        return { icon: 'fas fa-piggy-bank', color: 'rgba(100, 100, 100, 0.2)', iconColor: '#64748B' };
-                }
-            };
-
-            const { icon, color, iconColor } = getIconAndColor(type);
-
-            const newInvestment = {
-                id: Date.now(),
-                name,
-                type,
-                amount,
-                profitability: profitability + '%',
-                icon,
-                color,
-                iconColor
-            };
-
-            investments.push(newInvestment);
-            const userKey = currentUser ? `nexusFinanceInvestments_${currentUser.email}` : 'nexusFinanceInvestments';
-            localStorage.setItem(userKey, JSON.stringify(investments));
-            
-            updateInvestmentPortfolio();
-            closeAddInvestmentModal();
-            showNotification('Investimento adicionado com sucesso!', 'success');
-        }
-
         function editInvestment(id) {
     const investment = investments.find(inv => inv.id === id);
     if (!investment) return;
@@ -5191,5 +5141,6 @@ async function addInvestment() {
 </body>
 
 </html>
+
 
 
