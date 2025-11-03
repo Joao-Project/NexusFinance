@@ -2892,27 +2892,6 @@
             }
         }
 
-        // 🔥 FUNÇÃO DEBUG PARA INVESTIMENTOS
-async function debugInvestments() {
-    if (!currentUser) return;
-    
-    console.log('🔍 DEBUG: Verificando investimentos...');
-    
-    try {
-        const userId = currentUser.uid;
-        const investmentsRef = db.collection('users').doc(userId).collection('investments');
-        const snapshot = await investmentsRef.get();
-        
-        console.log(`📊 Total de investimentos no Firestore: ${snapshot.size}`);
-        
-        snapshot.forEach(doc => {
-            console.log('📄 Investimento:', doc.id, doc.data());
-        });
-        
-    } catch (error) {
-        console.error('❌ Erro no debug:', error);
-    }
-}
 
         // Auth Tab Management
         function switchAuthTab(tab) {
@@ -5141,6 +5120,7 @@ async function addInvestment() {
 </body>
 
 </html>
+
 
 
 
