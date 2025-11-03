@@ -4775,11 +4775,6 @@ async function addInvestment() {
         
         showNotification('Investimento adicionado com sucesso!', 'success');
 
-        // Debug: verificar se realmente salvou
-        setTimeout(() => {
-            debugInvestments();
-        }, 1000);
-
     } catch (error) {
         console.error("❌ Erro ao salvar investimento:", error);
         showNotification("Erro ao salvar investimento: " + error.message, "error");
@@ -4791,21 +4786,18 @@ async function addInvestment() {
     
     console.log('🔄 Atualizando UI do portfólio com:', investments.length, 'investimentos');
     
-    if (investments.length === 0) {
-        portfolioContainer.innerHTML = `
-            <div class="empty-state" style="padding: 40px 20px; text-align: center; color: var(--gray);">
-                <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
-                <h3 style="margin-bottom: 10px; color: var(--light);">Nenhum investimento</h3>
-                <p>Adicione seu primeiro investimento para começar</p>
-                <button class="btn" onclick="showAddInvestmentModal()" style="margin-top: 15px;">
-                    <i class="fas fa-plus"></i> Adicionar Primeiro Investimento
-                </button>
-                <button class="btn btn-outline" onclick="debugInvestments()" style="margin-top: 10px;">
-                    <i class="fas fa-bug"></i> Debug Firestore
-                </button>
-            </div>
-        `;
-    } else {
+if (investments.length === 0) {
+    portfolioContainer.innerHTML = `
+        <div class="empty-state" style="padding: 40px 20px; text-align: center; color: var(--gray);">
+            <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+            <h3 style="margin-bottom: 10px; color: var(--light);">Nenhum investimento</h3>
+            <p>Adicione seu primeiro investimento para começar</p>
+            <button class="btn" onclick="showAddInvestmentModal()" style="margin-top: 15px;">
+                <i class="fas fa-plus"></i> Adicionar Primeiro Investimento
+            </button>
+        </div>
+    `;
+} else {
         portfolioContainer.innerHTML = investments.map(investment => `
             <div class="portfolio-item">
                 <div class="portfolio-icon" style="background: ${investment.color}; color: ${investment.iconColor}">
@@ -5115,6 +5107,7 @@ async function addInvestment() {
 </body>
 
 </html>
+
 
 
 
