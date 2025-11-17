@@ -2673,12 +2673,12 @@
         // ===== FIREBASE INITIALIZATION =====
 function initializeFirebase() {
     try {
-        // Verificar se o Firebase já foi inicializado
-        if (firebase.apps.length > 0) {
-            console.log("✅ Firebase já está inicializado");
-            auth = firebase.auth();
-            db = firebase.firestore();
-            return true;
+        console.log("🚀 Inicializando Firebase...");
+        
+        // Verificar se o Firebase foi carregado
+        if (typeof firebase === 'undefined') {
+            console.error("❌ Firebase não carregado");
+            return false;
         }
 
         const firebaseConfig = {
@@ -2690,27 +2690,22 @@ function initializeFirebase() {
             appId: "1:751159627519:web:88b4dd9b395bc4229606ca",
             measurementId: "G-Q134TR8RGD"
         };
-        
+
         // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
+        
+        // Atribuir auth e db
         auth = firebase.auth();
         db = firebase.firestore();
         
         console.log("✅ Firebase inicializado com sucesso!");
+        console.log("🔑 Auth disponível:", !!auth);
+        console.log("🗄️ Firestore disponível:", !!db);
+        
         return true;
     } catch (error) {
         console.error("❌ Erro ao inicializar Firebase:", error);
-        
-        // Tentar fallback - verificar se já existe uma instância
-        try {
-            auth = firebase.auth();
-            db = firebase.firestore();
-            console.log("✅ Firebase recuperado com sucesso!");
-            return true;
-        } catch (fallbackError) {
-            console.error("❌ Erro no fallback do Firebase:", fallbackError);
-            return false;
-        }
+        return false;
     }
 }
 
@@ -3244,7 +3239,7 @@ function checkLoggedInUser() {
     }, 1000);
 }
 
-        // Handle login
+     // Handle login
 function handleLogin(event) {
     event.preventDefault();
     
@@ -3253,10 +3248,19 @@ function handleLogin(event) {
 
     console.log("🔐 Tentando login para:", email);
 
-    // Verificar se o Firebase está inicializado
+    // 🔥 VERIFICAÇÃO EXTRA - Tenta inicializar se não estiver disponível
     if (!auth) {
-        console.error("❌ Firebase Auth não disponível");
-        showNotification('Erro de conexão. Recarregue a página.', 'error');
+        console.log("🔄 Auth não disponível, tentando inicializar Firebase...");
+        if (!initializeFirebase()) {
+            showNotification('Erro de conexão. Recarregue a página.', 'error');
+            return;
+        }
+    }
+
+    // Verificar novamente após tentativa de inicialização
+    if (!auth) {
+        console.error("❌ Firebase Auth ainda não disponível após inicialização");
+        showNotification('Erro crítico. Recarregue a página.', 'error');
         return;
     }
 
@@ -3317,10 +3321,19 @@ function handleRegister(event) {
 
     console.log("📝 Tentando cadastro para:", email);
 
-    // Verificar se o Firebase está inicializado
+    // 🔥 VERIFICAÇÃO EXTRA - Tenta inicializar se não estiver disponível
     if (!auth) {
-        console.error("❌ Firebase Auth não disponível");
-        showNotification('Erro de conexão. Recarregue a página.', 'error');
+        console.log("🔄 Auth não disponível, tentando inicializar Firebase...");
+        if (!initializeFirebase()) {
+            showNotification('Erro de conexão. Recarregue a página.', 'error');
+            return;
+        }
+    }
+
+    // Verificar novamente após tentativa de inicialização
+    if (!auth) {
+        console.error("❌ Firebase Auth ainda não disponível após inicialização");
+        showNotification('Erro crítico. Recarregue a página.', 'error');
         return;
     }
 
