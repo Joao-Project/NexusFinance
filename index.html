@@ -989,6 +989,12 @@
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             margin-bottom: 25px;
+            display: none;
+        }
+
+        .simulator-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
         }
 
         .section-header {
@@ -1699,11 +1705,6 @@
             color: var(--gray);
         }
 
-        .category-transaction-amount {
-            font-weight: 700;
-            margin-right: 15px;
-        }
-
         .category-transaction-actions {
             display: flex;
             gap: 8px;
@@ -1808,6 +1809,48 @@
 
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        /* 🔥 NOVOS ESTILOS PARA CORREÇÕES */
+        .market-indicators-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            margin-bottom: 25px;
+        }
+        
+        .confirm-modal .modal-content {
+            max-width: 400px;
+        }
+        
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .no-simulator-selected {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray);
+        }
+
+        .no-simulator-selected i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .no-simulator-selected h3 {
+            margin-bottom: 10px;
+            color: var(--light);
+        }
+
+        .investment-dashboard .investment-cards {
+            margin-bottom: 30px;
         }
     </style>
 </head>
@@ -2038,7 +2081,7 @@
 
                 <!-- Quick Actions -->
                 <div class="investment-cards">
-                    <div class="investment-card" onclick="switchTab('investments')">
+                    <div class="investment-card" onclick="switchTab('investments'); showSimulator('juros-compostos');">
                         <div class="investment-icon">
                             <i class="fas fa-calculator"></i>
                         </div>
@@ -2046,7 +2089,7 @@
                         <div class="investment-description">Calcule projeções de investimentos e planeje seu futuro</div>
                     </div>
                     
-                    <div class="investment-card" onclick="switchTab('investments')">
+                    <div class="investment-card" onclick="switchTab('investments'); showMarketIndicators();">
                         <div class="investment-icon">
                             <i class="fas fa-chart-line"></i>
                         </div>
@@ -2185,25 +2228,25 @@
                 </div>
             </div>
 
-            <!-- Investments Tab -->
+            <!-- 🔥 INVESTMENTS TAB CORRIGIDA -->
             <div id="investments" class="tab-content">
                 <div class="investment-dashboard">
                     <!-- Investment Cards -->
                     <div class="investment-cards">
                         <div class="investment-card" onclick="showSimulator('juros-compostos')">
                             <div class="investment-icon">
-                                <i class="fas fa-chart-line"></i>
+                                <i class="fas fa-calculator"></i>
                             </div>
-                            <div class="investment-title">Juros Compostos</div>
-                            <div class="investment-description">Simule o poder dos juros compostos no longo prazo</div>
+                            <div class="investment-title">Simulador</div>
+                            <div class="investment-description">Calcule projeções de investimentos e planeje seu futuro</div>
                         </div>
                         
-                        <div class="investment-card" onclick="showSimulator('aposentadoria')">
+                        <div class="investment-card" onclick="showMarketIndicators()">
                             <div class="investment-icon">
-                                <i class="fas fa-umbrella-beach"></i>
+                                <i class="fas fa-chart-line"></i>
                             </div>
-                            <div class="investment-title">Aposentadoria</div>
-                            <div class="investment-description">Planeje sua independência financeira</div>
+                            <div class="investment-title">Mercado</div>
+                            <div class="investment-description">Acompanhe indicadores econômicos em tempo real</div>
                         </div>
                         
                         <div class="investment-card" onclick="showSimulator('comparador')">
@@ -2214,17 +2257,17 @@
                             <div class="investment-description">Compare diferentes tipos de investimentos</div>
                         </div>
                         
-                        <div class="investment-card" onclick="showSimulator('meta-financeira')">
+                        <div class="investment-card" onclick="switchTab('goals')">
                             <div class="investment-icon">
                                 <i class="fas fa-bullseye"></i>
                             </div>
-                            <div class="investment-title">Meta Financeira</div>
-                            <div class="investment-description">Calcule quanto precisa poupar para seus objetivos</div>
+                            <div class="investment-title">Metas</div>
+                            <div class="investment-description">Defina e acompanhe suas metas financeiras</div>
                         </div>
                     </div>
 
-                    <!-- Market Indicators - MELHORADO -->
-                    <div class="simulator-section">
+                    <!-- 🔥 SEÇÃO DE INDICADORES DE MERCADO SEPARADA -->
+                    <div class="market-indicators-section" id="marketIndicatorsSection">
                         <div class="section-header">
                             <h2 class="section-title">Indicadores de Mercado</h2>
                             <button class="btn btn-outline" onclick="refreshIndicators()">
@@ -2236,60 +2279,90 @@
                         </div>
                     </div>
 
-                    <!-- Juros Compostos Simulator -->
-                    <div class="simulator-section" id="juros-compostos-simulator">
-                        <div class="section-header">
-                            <h2 class="section-title">Simulador de Juros Compostos</h2>
+                    <!-- 🔥 ÁREA DOS SIMULADORES -->
+                    <div id="simulatorsArea">
+                        <!-- Estado inicial - nenhum simulador selecionado -->
+                        <div class="no-simulator-selected" id="noSimulatorSelected">
+                            <i class="fas fa-calculator"></i>
+                            <h3>Selecione um Simulador</h3>
+                            <p>Escolha uma das opções acima para começar a simular seus investimentos</p>
                         </div>
-                        <div class="simulator-container">
-                            <div class="simulator-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="form-label">Valor Inicial (R$)</label>
-                                        <input type="number" class="form-input" id="initialAmount" value="1000" min="0">
+
+                        <!-- Juros Compostos Simulator -->
+                        <div class="simulator-section" id="juros-compostos-simulator">
+                            <div class="section-header">
+                                <h2 class="section-title">Simulador de Juros Compostos</h2>
+                                <button class="btn btn-success" onclick="saveInvestmentSimulation()">
+                                    <i class="fas fa-save"></i> Salvar Simulação
+                                </button>
+                            </div>
+                            <div class="simulator-container">
+                                <div class="simulator-form">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">Valor Inicial (R$)</label>
+                                            <input type="number" class="form-input" id="initialAmount" value="1000" min="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Aporte Mensal (R$)</label>
+                                            <input type="number" class="form-input" id="monthlyInvestment" value="500" min="0">
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Aporte Mensal (R$)</label>
-                                        <input type="number" class="form-input" id="monthlyInvestment" value="500" min="0">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">Taxa Anual (%)</label>
+                                            <input type="number" class="form-input" id="annualRate" value="8" step="0.1" min="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Período (anos)</label>
+                                            <input type="number" class="form-input" id="investmentPeriod" value="10" min="1" max="50">
+                                        </div>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button class="btn btn-success" onclick="calculateCompoundInterest()">
+                                            <i class="fas fa-calculator"></i> Calcular
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="form-label">Taxa Anual (%)</label>
-                                        <input type="number" class="form-input" id="annualRate" value="8" step="0.1" min="0">
+                                <div class="simulator-results">
+                                    <div class="result-item">
+                                        <span class="result-label">Total Investido</span>
+                                        <span class="result-value" id="totalInvested">R$ 0,00</span>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Período (anos)</label>
-                                        <input type="number" class="form-input" id="investmentPeriod" value="10" min="1" max="50">
+                                    <div class="result-item">
+                                        <span class="result-label">Juros Acumulados</span>
+                                        <span class="result-value positive" id="totalInterest">R$ 0,00</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Valor Final</span>
+                                        <span class="result-value positive" id="finalAmount">R$ 0,00</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">Rentabilidade</span>
+                                        <span class="result-value positive" id="profitability">0%</span>
                                     </div>
                                 </div>
-                                <div class="form-actions">
-                                    <button class="btn btn-success" onclick="calculateCompoundInterest()">
-                                        <i class="fas fa-calculator"></i> Calcular
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="compoundInterestChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Outros simuladores (inicialmente ocultos) -->
+                        <div class="simulator-section" id="comparador-simulator">
+                            <div class="section-header">
+                                <h2 class="section-title">Comparador de Investimentos</h2>
+                            </div>
+                            <div class="simulator-container">
+                                <div class="empty-state">
+                                    <i class="fas fa-balance-scale"></i>
+                                    <h3>Comparador de Investimentos</h3>
+                                    <p>Compare diferentes tipos de investimentos lado a lado</p>
+                                    <button class="btn" onclick="showNotification('Funcionalidade em desenvolvimento!', 'info')">
+                                        <i class="fas fa-rocket"></i> Em Breve
                                     </button>
                                 </div>
                             </div>
-                            <div class="simulator-results">
-                                <div class="result-item">
-                                    <span class="result-label">Total Investido</span>
-                                    <span class="result-value" id="totalInvested">R$ 0,00</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Juros Acumulados</span>
-                                    <span class="result-value positive" id="totalInterest">R$ 0,00</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Valor Final</span>
-                                    <span class="result-value positive" id="finalAmount">R$ 0,00</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Rentabilidade</span>
-                                    <span class="result-value positive" id="profitability">0%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="compoundInterestChart"></canvas>
                         </div>
                     </div>
 
@@ -2305,24 +2378,24 @@
                         <!-- Portfolio Stats -->
                         <div class="portfolio-stats">
                             <div class="portfolio-stat-card">
-                                <div class="portfolio-stat-value" id="portfolioTotal">R$ 10.500,00</div>
+                                <div class="portfolio-stat-value" id="portfolioTotal">R$ 0,00</div>
                                 <div class="portfolio-stat-label">Valor Total</div>
                                 <div class="portfolio-stat-change positive">
-                                    <i class="fas fa-arrow-up"></i> +5.2% este mês
+                                    <i class="fas fa-arrow-up"></i> Carregando...
                                 </div>
                             </div>
                             <div class="portfolio-stat-card">
-                                <div class="portfolio-stat-value" id="portfolioReturn">+12.8%</div>
+                                <div class="portfolio-stat-value" id="portfolioReturn">+0%</div>
                                 <div class="portfolio-stat-label">Rentabilidade</div>
                                 <div class="portfolio-stat-change positive">
-                                    <i class="fas fa-arrow-up"></i> +2.1% vs mês passado
+                                    <i class="fas fa-arrow-up"></i> Carregando...
                                 </div>
                             </div>
                             <div class="portfolio-stat-card">
-                                <div class="portfolio-stat-value" id="portfolioDividends">R$ 245,00</div>
+                                <div class="portfolio-stat-value" id="portfolioDividends">R$ 0,00</div>
                                 <div class="portfolio-stat-label">Dividendos</div>
                                 <div class="portfolio-stat-change positive">
-                                    <i class="fas fa-arrow-up"></i> +8.5% este mês
+                                    <i class="fas fa-arrow-up"></i> Carregando...
                                 </div>
                             </div>
                         </div>
@@ -2446,7 +2519,7 @@
                 <button class="btn btn-warning" onclick="updateGoal()">
                     <i class="fas fa-save"></i> Atualizar Meta
                 </button>
-                <button class="btn btn-danger" onclick="deleteGoal()">
+                <button class="btn btn-danger" onclick="confirmDeleteGoalFromModal()">
                     <i class="fas fa-trash"></i> Excluir Meta
                 </button>
             </div>
@@ -2483,14 +2556,33 @@
                 <button class="btn btn-warning" onclick="updateTransaction()">
                     <i class="fas fa-save"></i> Atualizar
                 </button>
-                <button class="btn btn-danger" onclick="deleteTransaction()">
+                <button class="btn btn-danger" onclick="confirmDeleteTransactionFromModal()">
                     <i class="fas fa-trash"></i> Excluir
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 🔥 NOVO MODAL: Transações por Categoria -->
+    <!-- 🔥 NOVO MODAL: Confirmação de Exclusão -->
+    <div id="confirmModal" class="modal confirm-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="confirmModalTitle">Confirmar Exclusão</h3>
+                <button class="modal-close" onclick="closeConfirmModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmModalMessage">Tem certeza que deseja excluir este item?</p>
+            </div>
+            <div class="confirm-actions">
+                <button class="btn btn-outline" onclick="closeConfirmModal()">Cancelar</button>
+                <button class="btn btn-danger" id="confirmActionBtn">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔥 MODAL: Transações por Categoria -->
     <div id="categoryTransactionsModal" class="modal category-transactions-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -2506,7 +2598,7 @@
         </div>
     </div>
 
-    <!-- 🔥 NOVO MODAL: Relatório PDF -->
+    <!-- 🔥 MODAL: Relatório PDF -->
     <div id="reportModal" class="modal report-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -2566,84 +2658,7 @@
     </div>
 
     <script>
-        // ===== RESPONSIVE FUNCTIONS =====
-        function switchTab(tabName) {
-            // Update desktop navigation
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Update mobile navigation
-            document.querySelectorAll('.mobile-nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            // Find and activate the clicked nav item
-            const navItems = document.querySelectorAll('.nav-item');
-            for (let i = 0; i < navItems.length; i++) {
-                if (navItems[i].textContent.includes(getTabName(tabName))) {
-                    navItems[i].classList.add('active');
-                    break;
-                }
-            }
-
-            // Activate mobile nav item
-            const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
-            for (let i = 0; i < mobileNavItems.length; i++) {
-                if (mobileNavItems[i].textContent.includes(getTabName(tabName))) {
-                    mobileNavItems[i].classList.add('active');
-                    break;
-                }
-            }
-
-            // Update content
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.getElementById(tabName).classList.add('active');
-
-            // Update page title
-            const titles = {
-                'dashboard': 'Dashboard Financeiro',
-                'transactions': 'Transações',
-                'goals': 'Metas Financeiras',
-                'investments': 'Investimentos'
-            };
-            document.getElementById('pageTitle').textContent = titles[tabName] || 'Dashboard Financeiro';
-
-            // Load data when switching tabs
-            if (tabName === 'transactions') {
-                loadTransactions();
-            } else if (tabName === 'goals') {
-                loadGoals();
-            } else if (tabName === 'investments') {
-                setupInvestmentPortfolio();
-                setTimeout(() => {
-                    showSimulator('juros-compostos');
-                    calculateCompoundInterest();
-                }, 100);
-            }
-
-            // Refresh charts when switching to investments tab
-            if (tabName === 'investments') {
-                setTimeout(() => {
-                    if (compoundInterestChart) compoundInterestChart.update();
-                    if (portfolioChart) portfolioChart.update();
-                }, 100);
-            }
-        }
-
-        function getTabName(tabId) {
-            const tabNames = {
-                'dashboard': 'Dashboard',
-                'transactions': 'Transações',
-                'goals': 'Metas',
-                'investments': 'Investimentos'
-            };
-            return tabNames[tabId] || '';
-        }
-
-        // ===== EXISTING JAVASCRIPT CODE =====
+        // ===== VARIÁVEIS GLOBAIS =====
         let currentUser = null;
         let auth;
         let db;
@@ -2653,8 +2668,9 @@
         let compoundInterestChart = null;
         let portfolioChart = null;
         let selectedReportPeriod = 'current-month';
+        let currentSimulator = null;
 
-        // Initialize Firebase
+        // ===== FIREBASE INITIALIZATION =====
         function initializeFirebase() {
             try {
                 const firebaseConfig = {
@@ -2678,6 +2694,490 @@
                 return false;
             }
         }
+
+        // ===== FUNÇÕES CORRIGIDAS PARA INVESTIMENTOS =====
+
+        // 🔥 CORREÇÃO: Função para salvar simulação no Firebase
+        async function saveInvestmentSimulation() {
+            if (!currentUser) {
+                showNotification('Você precisa estar logado para salvar simulações', 'error');
+                return;
+            }
+
+            const initialAmount = parseFloat(document.getElementById('initialAmount').value) || 0;
+            const monthlyInvestment = parseFloat(document.getElementById('monthlyInvestment').value) || 0;
+            const annualRate = parseFloat(document.getElementById('annualRate').value) || 0;
+            const years = parseInt(document.getElementById('investmentPeriod').value) || 1;
+
+            // Calcular resultados atuais
+            calculateCompoundInterest();
+            
+            const finalAmount = parseFloat(document.getElementById('finalAmount').textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+            const totalInvested = parseFloat(document.getElementById('totalInvested').textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+            const totalInterest = parseFloat(document.getElementById('totalInterest').textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+
+            const simulationData = {
+                type: 'compound-interest',
+                initialAmount: initialAmount,
+                monthlyInvestment: monthlyInvestment,
+                annualRate: annualRate,
+                years: years,
+                finalAmount: finalAmount,
+                totalInvested: totalInvested,
+                totalInterest: totalInterest,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('investments')
+                    .add(simulationData);
+
+                showNotification('Simulação salva com sucesso!', 'success');
+                loadInvestments(); // Recarregar a lista de investimentos
+            } catch (error) {
+                console.error("❌ Erro ao salvar simulação:", error);
+                showNotification("Erro ao salvar simulação: " + error.message, "error");
+            }
+        }
+
+        // 🔥 CORREÇÃO: Carregar investimentos do Firebase
+async function loadInvestments() {
+    if (!currentUser) return;
+
+    try {
+        const snapshot = await db.collection('users').doc(currentUser.uid)
+            .collection('investments')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        investments = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            investments.push({
+                id: doc.id,
+                ...data
+            });
+        });
+
+        // Se não houver investimentos, criar alguns exemplos
+        if (investments.length === 0) {
+            await createSampleInvestments();
+        } else {
+            updateInvestmentPortfolio();
+        }
+    } catch (error) {
+        console.error("❌ Erro ao carregar investimentos:", error);
+        // Criar investimentos de exemplo
+        createSampleInvestments();
+    }
+}
+
+// 🔥 CRIAR INVESTIMENTOS DE EXEMPLO
+async function createSampleInvestments() {
+    if (!currentUser) return;
+
+    const sampleInvestments = [
+        {
+            type: 'compound-interest',
+            name: 'Simulação CDB',
+            initialAmount: 5000,
+            currentAmount: 5250,
+            annualRate: 8,
+            finalAmount: 12500,
+            totalInvested: 6500,
+            totalInterest: 6000,
+            createdAt: new Date()
+        },
+        {
+            type: 'stock',
+            name: 'Ações Diversificadas',
+            initialAmount: 3000,
+            currentAmount: 3450,
+            annualRate: 15,
+            createdAt: new Date()
+        }
+    ];
+
+    try {
+        for (const investment of sampleInvestments) {
+            await db.collection('users').doc(currentUser.uid)
+                .collection('investments')
+                .add({
+                    ...investment,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+        }
+        
+        loadInvestments(); // Recarregar após criar exemplos
+    } catch (error) {
+        console.error("❌ Erro ao criar investimentos de exemplo:", error);
+        setupSampleInvestments(); // Usar dados locais em caso de erro
+    }
+}
+
+        // 🔥 CORREÇÃO: Função para setup do portfólio
+        function setupInvestmentPortfolio() {
+            loadInvestments(); // Agora carrega do Firebase
+        }
+
+        // 🔥 CORREÇÃO: Atualizar portfólio com dados reais
+function updateInvestmentPortfolio() {
+    const portfolioContainer = document.getElementById('investmentPortfolio');
+    
+    if (!investments || investments.length === 0) {
+        portfolioContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-chart-line"></i>
+                <h3>Nenhum investimento cadastrado</h3>
+                <p>Comece criando seu primeiro investimento</p>
+                <button class="btn" onclick="showAddInvestmentModal()" style="margin-top: 15px;">
+                    <i class="fas fa-plus"></i> Adicionar Investimento
+                </button>
+            </div>
+        `;
+        
+        // Reset stats
+        document.getElementById('portfolioTotal').textContent = 'R$ 0,00';
+        document.getElementById('portfolioReturn').textContent = '+0%';
+        document.getElementById('portfolioDividends').textContent = 'R$ 0,00';
+        return;
+    }
+
+    // Calcular totais do portfólio
+    const totalPortfolio = investments.reduce((sum, inv) => sum + (inv.currentAmount || inv.finalAmount || 0), 0);
+    const totalInvested = investments.reduce((sum, inv) => sum + (inv.initialAmount || inv.totalInvested || 0), 0);
+    const totalProfit = totalPortfolio - totalInvested;
+    const avgProfitability = totalInvested > 0 ? (totalProfit / totalInvested * 100) : 0;
+
+    // Atualizar estatísticas
+    document.getElementById('portfolioTotal').textContent = `R$ ${totalPortfolio.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+    document.getElementById('portfolioReturn').textContent = `${avgProfitability >= 0 ? '+' : ''}${avgProfitability.toFixed(1)}%`;
+    document.getElementById('portfolioDividends').textContent = `R$ ${totalProfit.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+
+    // Atualizar lista de investimentos
+    portfolioContainer.innerHTML = investments.map(investment => {
+        const typeLabels = {
+            'compound-interest': 'Juros Compostos',
+            'stock': 'Ações',
+            'fixed-income': 'Renda Fixa',
+            'funds': 'Fundos'
+        };
+        
+        const typeIcons = {
+            'compound-interest': 'fas fa-chart-line',
+            'stock': 'fas fa-chart-bar',
+            'fixed-income': 'fas fa-landmark',
+            'funds': 'fas fa-piggy-bank'
+        };
+        
+        const typeColors = {
+            'compound-interest': '#0066FF',
+            'stock': '#00D4AA',
+            'fixed-income': '#9B59B6',
+            'funds': '#FF6B35'
+        };
+        
+        const type = investment.type || 'compound-interest';
+        const currentValue = investment.currentAmount || investment.finalAmount || 0;
+        const investedValue = investment.initialAmount || investment.totalInvested || 0;
+        const profitability = investedValue > 0 ? 
+            ((currentValue - investedValue) / investedValue * 100) : 0;
+        const profitAmount = currentValue - investedValue;
+
+        return `
+            <div class="portfolio-item">
+                <div class="portfolio-item-content">
+                    <div class="portfolio-item-info">
+                        <div class="portfolio-item-header">
+                            <div class="portfolio-item-icon" style="background: rgba(${hexToRgb(typeColors[type])}, 0.2); color: ${typeColors[type]}">
+                                <i class="${typeIcons[type]}"></i>
+                            </div>
+                            <div>
+                                <div class="portfolio-item-name">${investment.name || typeLabels[type]}</div>
+                                <div class="portfolio-item-details">
+                                    <span>${investment.annualRate || 0}% a.a.</span>
+                                    <span>•</span>
+                                    <span>${typeLabels[type]}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="portfolio-item-amount">
+                            R$ ${currentValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                        </div>
+                        <div class="portfolio-item-profitability ${profitability >= 0 ? 'positive' : 'negative'}">
+                            <i class="fas fa-arrow-${profitability >= 0 ? 'up' : 'down'}"></i>
+                            ${profitability >= 0 ? '+' : ''}${profitability.toFixed(1)}% (R$ ${Math.abs(profitAmount).toLocaleString('pt-BR', {minimumFractionDigits: 2})})
+                        </div>
+                    </div>
+                    <div class="portfolio-item-actions">
+                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteInvestment('${investment.id}', '${investment.name || typeLabels[type]}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    updatePortfolioChart();
+}
+
+        // 🔥 CORREÇÃO: Dados de exemplo apenas se Firebase falhar
+        function setupSampleInvestments() {
+            investments = [
+                {
+                    id: '1',
+                    type: 'compound-interest',
+                    initialAmount: 5000,
+                    monthlyInvestment: 500,
+                    annualRate: 8,
+                    years: 10,
+                    finalAmount: 12500,
+                    totalInvested: 6500,
+                    totalInterest: 6000
+                }
+            ];
+            updateInvestmentPortfolio();
+        }
+
+        // 🔥 NOVA FUNÇÃO: Modal de confirmação de exclusão
+        function confirmDeleteInvestment(investmentId, investmentName) {
+            document.getElementById('confirmModalTitle').textContent = 'Excluir Investimento';
+            document.getElementById('confirmModalMessage').textContent = `Tem certeza que deseja excluir a simulação "${investmentName}"? Esta ação não pode ser desfeita.`;
+            
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            confirmBtn.onclick = () => deleteInvestmentConfirmed(investmentId);
+            
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function confirmDeleteGoal(goalId, goalName) {
+            document.getElementById('confirmModalTitle').textContent = 'Excluir Meta';
+            document.getElementById('confirmModalMessage').textContent = `Tem certeza que deseja excluir a meta "${goalName}"? Esta ação não pode ser desfeita.`;
+            
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            confirmBtn.onclick = () => deleteGoalConfirmed(goalId);
+            
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function confirmDeleteTransaction(transactionId, transactionDesc) {
+            document.getElementById('confirmModalTitle').textContent = 'Excluir Transação';
+            document.getElementById('confirmModalMessage').textContent = `Tem certeza que deseja excluir a transação "${transactionDesc}"? Esta ação não pode ser desfeita.`;
+            
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            confirmBtn.onclick = () => deleteTransactionConfirmed(transactionId);
+            
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+        }
+
+        // 🔥 CORREÇÃO: Funções de exclusão confirmadas
+        async function deleteInvestmentConfirmed(investmentId) {
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('investments')
+                    .doc(investmentId)
+                    .delete();
+
+                closeConfirmModal();
+                loadInvestments();
+                showNotification('Investimento excluído com sucesso!', 'success');
+            } catch (error) {
+                console.error("❌ Erro ao excluir investimento:", error);
+                showNotification("Erro ao excluir: " + error.message, "error");
+            }
+        }
+
+        async function deleteGoalConfirmed(goalId) {
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('goals')
+                    .doc(goalId)
+                    .delete();
+
+                closeConfirmModal();
+                loadGoals();
+                showNotification('Meta excluída com sucesso!', 'success');
+            } catch (error) {
+                console.error("❌ Erro ao excluir meta:", error);
+                showNotification("Erro ao excluir: " + error.message, "error");
+            }
+        }
+
+        async function deleteTransactionConfirmed(transactionId) {
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('transactions')
+                    .doc(transactionId)
+                    .delete();
+
+                closeConfirmModal();
+                loadTransactions();
+                showNotification('Transação excluída com sucesso!', 'success');
+            } catch (error) {
+                console.error("❌ Erro ao excluir transação:", error);
+                showNotification("Erro ao excluir: " + error.message, "error");
+            }
+        }
+
+        // ===== CORREÇÕES DE NAVEGAÇÃO =====
+
+        // 🔥 CORREÇÃO COMPLETA: Switch Tab melhorado
+        function switchTab(tabName) {
+            console.log("Mudando para aba:", tabName);
+            
+            // Atualizar navegação desktop
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Atualizar navegação mobile
+            document.querySelectorAll('.mobile-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Encontrar e ativar o item de navegação clicado
+            const navItems = document.querySelectorAll('.nav-item');
+            for (let i = 0; i < navItems.length; i++) {
+                if (navItems[i].textContent.includes(getTabName(tabName))) {
+                    navItems[i].classList.add('active');
+                    break;
+                }
+            }
+
+            // Ativar item mobile
+            const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+            for (let i = 0; i < mobileNavItems.length; i++) {
+                if (mobileNavItems[i].textContent.includes(getTabName(tabName))) {
+                    mobileNavItems[i].classList.add('active');
+                    break;
+                }
+            }
+
+            // Atualizar conteúdo
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+
+            // Atualizar título da página
+            const titles = {
+                'dashboard': 'Dashboard Financeiro',
+                'transactions': 'Transações',
+                'goals': 'Metas Financeiras',
+                'investments': 'Investimentos'
+            };
+            document.getElementById('pageTitle').textContent = titles[tabName] || 'Dashboard Financeiro';
+
+            // 🔥 CORREÇÃO: Comportamento específico para cada aba
+            if (tabName === 'transactions') {
+                loadTransactions();
+            } else if (tabName === 'goals') {
+                loadGoals();
+            } else if (tabName === 'investments') {
+                // 🔥 CORREÇÃO: Não mostrar simulador automaticamente
+                hideAllSimulators();
+                showMarketIndicators(); // Mostrar indicadores por padrão
+                loadInvestments();
+            }
+
+            // 🔥 REMOVIDO: Não mostrar popup automático ao mudar de aba
+        }
+
+        // 🔥 NOVA FUNÇÃO: Mostrar apenas indicadores de mercado
+        function showMarketIndicators() {
+            hideAllSimulators();
+            document.getElementById('marketIndicatorsSection').style.display = 'block';
+            document.getElementById('noSimulatorSelected').style.display = 'none';
+            loadMarketIndicators();
+        }
+
+        // 🔥 CORREÇÃO: Função showSimulator melhorada
+        function showSimulator(type) {
+            console.log("Abrindo simulador:", type);
+            
+            // Esconder todos os simuladores primeiro
+            hideAllSimulators();
+            
+            // Esconder indicadores de mercado
+            document.getElementById('marketIndicatorsSection').style.display = 'none';
+            document.getElementById('noSimulatorSelected').style.display = 'none';
+            
+            // Mostrar simulador selecionado
+            const simulator = document.getElementById(`${type}-simulator`);
+            if (simulator) {
+                simulator.classList.add('active');
+                currentSimulator = type;
+                
+                // Se for o simulador de juros compostos, calcular automaticamente
+                if (type === 'juros-compostos') {
+                    setTimeout(() => {
+                        calculateCompoundInterest();
+                    }, 100);
+                }
+            }
+        }
+
+        // 🔥 NOVA FUNÇÃO: Esconder todos os simuladores
+        function hideAllSimulators() {
+            document.querySelectorAll('.simulator-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('noSimulatorSelected').style.display = 'block';
+        }
+
+        // 🔥 FUNÇÕES AUXILIARES
+        function getTabName(tabId) {
+            const tabNames = {
+                'dashboard': 'Dashboard',
+                'transactions': 'Transações',
+                'goals': 'Metas',
+                'investments': 'Investimentos'
+            };
+            return tabNames[tabId] || '';
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? 
+                `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` 
+                : '0, 102, 255';
+        }
+
+        // 🔥 ATUALIZAÇÃO: Funções de exclusão dos modais para usar confirmação
+        function confirmDeleteGoalFromModal() {
+            const goalId = document.getElementById('editGoalId').value;
+            const goal = goals.find(g => g.id === goalId);
+            if (goal) {
+                confirmDeleteGoal(goalId, goal.name);
+            }
+        }
+
+        function confirmDeleteTransactionFromModal() {
+            const transactionId = document.getElementById('editTransactionId').value;
+            const transaction = transactions.find(t => t.id === transactionId);
+            if (transaction) {
+                confirmDeleteTransaction(transactionId, transaction.description);
+            }
+        }
+
+        // 🔥 ATUALIZAÇÃO: Função deleteTransactionDirect para usar modal de confirmação
+        function deleteTransactionDirect(transactionId) {
+            const transaction = transactions.find(t => t.id === transactionId);
+            if (transaction) {
+                confirmDeleteTransaction(transactionId, transaction.description);
+            }
+        }
+
+        // ===== RESTANTE DAS FUNÇÕES EXISTENTES =====
+        // (Mantendo todas as funções originais, apenas adaptando as que precisam de confirmação)
 
         // Check logged in user
         function checkLoggedInUser() {
@@ -2848,9 +3348,6 @@
             updateDashboardStats();
             loadMarketIndicators();
             setupInvestmentPortfolio();
-            setTimeout(() => {
-                calculateCompoundInterest();
-            }, 500);
             loadTransactions();
             loadGoals();
         }
@@ -3022,7 +3519,7 @@
             }
         }
 
-        // ===== TRANSACTIONS MANAGEMENT - COMPLETELY REWRITTEN =====
+        // ===== TRANSACTIONS MANAGEMENT =====
         async function addTransaction(type) {
             let descriptionElement, amountElement;
             
@@ -3090,7 +3587,7 @@
                 // Reload transactions to show the new one
                 loadTransactions();
                 
-                // 🔥🔥🔥 ATUALIZAR OS CARDS IMEDIATAMENTE 🔥🔥🔥
+                // 🔥 ATUALIZAR OS CARDS IMEDIATAMENTE
                 setTimeout(() => updateDashboardStats(), 500);
                 
                 showNotification(
@@ -3114,7 +3611,7 @@
             const selectedYear = parseInt(yearSelect.value);
 
             try {
-                // 🔥 SOLUÇÃO TEMPORÁRIA: Carregar todas as transações e filtrar localmente
+                // Carregar todas as transações e filtrar localmente
                 const snapshot = await db.collection('users').doc(userId)
                     .collection('transactions')
                     .orderBy('createdAt', 'desc')
@@ -3133,7 +3630,7 @@
                 });
 
                 updateTransactionList();
-                updateDashboardStats(); // 🔥 ATUALIZAR OS CARDS APÓS CARREGAR TRANSAÇÕES
+                updateDashboardStats(); // ATUALIZAR OS CARDS APÓS CARREGAR TRANSAÇÕES
                 
             } catch (error) {
                 console.error("❌ Erro ao carregar transações:", error);
@@ -3243,45 +3740,6 @@
             } catch (error) {
                 console.error("❌ Erro ao atualizar transação:", error);
                 showNotification("Erro ao atualizar: " + error.message, "error");
-            }
-        }
-
-        // CORREÇÃO COMPLETA: Função para excluir transação do modal
-        async function deleteTransaction() {
-            const transactionId = document.getElementById('editTransactionId').value;
-
-            if (confirm('Tem certeza que deseja excluir esta transação?')) {
-                try {
-                    await db.collection('users').doc(currentUser.uid)
-                        .collection('transactions')
-                        .doc(transactionId)
-                        .delete();
-
-                    closeEditTransactionModal();
-                    loadTransactions();
-                    showNotification('Transação excluída com sucesso!', 'success');
-                } catch (error) {
-                    console.error("❌ Erro ao excluir transação:", error);
-                    showNotification("Erro ao excluir: " + error.message, "error");
-                }
-            }
-        }
-
-        // CORREÇÃO COMPLETA: Função para excluir transação diretamente da lista
-        async function deleteTransactionDirect(transactionId) {
-            if (confirm('Tem certeza que deseja excluir esta transação?')) {
-                try {
-                    await db.collection('users').doc(currentUser.uid)
-                        .collection('transactions')
-                        .doc(transactionId)
-                        .delete();
-
-                    loadTransactions();
-                    showNotification('Transação excluída com sucesso!', 'success');
-                } catch (error) {
-                    console.error("❌ Erro ao excluir transação:", error);
-                    showNotification("Erro ao excluir: " + error.message, "error");
-                }
             }
         }
 
@@ -3717,66 +4175,202 @@
         }
 
         // Goals Management
-        function showAddGoalModal() {
-            document.getElementById('addGoalModal').classList.add('active');
-        }
+function showAddGoalModal() {
+    document.getElementById('addGoalModal').classList.add('active');
+}
 
-        function closeAddGoalModal() {
-            document.getElementById('addGoalModal').classList.remove('active');
-            document.getElementById('goalName').value = '';
-            document.getElementById('goalDescription').value = '';
-            document.getElementById('goalCurrentAmount').value = '0';
-            document.getElementById('goalTargetAmount').value = '';
-            document.getElementById('goalTimeframe').value = '12';
-        }
+function closeAddGoalModal() {
+    document.getElementById('addGoalModal').classList.remove('active');
+    document.getElementById('goalName').value = '';
+    document.getElementById('goalDescription').value = '';
+    document.getElementById('goalCurrentAmount').value = '0';
+    document.getElementById('goalTargetAmount').value = '';
+    document.getElementById('goalTimeframe').value = '12';
+}
 
-        async function addGoal() {
-            const name = document.getElementById('goalName').value.trim();
-            const description = document.getElementById('goalDescription').value.trim();
-            const currentAmount = parseFloat(document.getElementById('goalCurrentAmount').value) || 0;
-            const targetAmount = parseFloat(document.getElementById('goalTargetAmount').value);
-            const timeframe = parseInt(document.getElementById('goalTimeframe').value);
+async function addGoal() {
+    const name = document.getElementById('goalName').value.trim();
+    const description = document.getElementById('goalDescription').value.trim();
+    const currentAmount = parseFloat(document.getElementById('goalCurrentAmount').value) || 0;
+    const targetAmount = parseFloat(document.getElementById('goalTargetAmount').value);
+    const timeframe = parseInt(document.getElementById('goalTimeframe').value);
 
-            if (!name || !description || isNaN(targetAmount) || targetAmount <= 0 || isNaN(timeframe) || timeframe <= 0) {
-                showNotification('Preencha todos os campos obrigatórios', 'error');
-                return;
-            }
+    if (!name || !description || isNaN(targetAmount) || targetAmount <= 0 || isNaN(timeframe) || timeframe <= 0) {
+        showNotification('Preencha todos os campos obrigatórios', 'error');
+        return;
+    }
 
-            if (!currentUser) {
-                showNotification('Você precisa estar logado para criar metas', 'error');
-                return;
-            }
+    if (!currentUser) {
+        showNotification('Você precisa estar logado para criar metas', 'error');
+        return;
+    }
 
-            const userId = currentUser.uid;
+    const userId = currentUser.uid;
 
-            const newGoalData = { 
+    const newGoalData = { 
+        name: name,
+        description: description,
+        currentAmount: currentAmount,
+        targetAmount: targetAmount,
+        timeframe: timeframe,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    try {
+        const docRef = await db.collection('users').doc(userId).collection('goals').add(newGoalData);
+
+        goals.unshift({ 
+            id: docRef.id, 
+            ...newGoalData
+        });
+
+        closeAddGoalModal();
+        loadGoals();
+        
+        showNotification('Meta criada com sucesso!', 'success');
+
+    } catch (error) {
+        console.error("❌ Erro ao criar meta:", error);
+        showNotification("Erro ao criar meta: " + error.message, "error");
+    }
+}
+
+async function loadGoals() {
+    if (!currentUser) return;
+
+    const userId = currentUser.uid;
+
+    try {
+        const snapshot = await db.collection('users').doc(userId)
+            .collection('goals')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        goals = [];
+        snapshot.forEach(doc => {
+            goals.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        updateGoalsList();
+    } catch (error) {
+        console.error("❌ Erro ao carregar metas:", error);
+    }
+}
+
+function updateGoalsList() {
+    const goalsList = document.getElementById('goalsList');
+    
+    if (goals.length === 0) {
+        goalsList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-bullseye"></i>
+                <h3>Nenhuma meta definida</h3>
+                <p>Crie sua primeira meta financeira para começar</p>
+            </div>
+        `;
+    } else {
+        goalsList.innerHTML = goals.map(goal => {
+            const progress = (goal.currentAmount / goal.targetAmount) * 100;
+            const progressColor = progress >= 100 ? 'var(--success)' : progress >= 75 ? 'var(--warning)' : 'var(--primary)';
+            const monthlyTarget = (goal.targetAmount - goal.currentAmount) / goal.timeframe;
+            const monthsLeft = goal.timeframe - Math.floor((goal.currentAmount / goal.targetAmount) * goal.timeframe);
+            
+            return `
+                <div class="goal-card" onclick="editGoal('${goal.id}')">
+                    <div class="goal-header">
+                        <div>
+                            <div class="goal-title">${goal.name}</div>
+                            <div class="goal-description">${goal.description}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="goal-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${Math.min(progress, 100)}%; background: ${progressColor};"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span>${progress.toFixed(1)}% concluído</span>
+                            <span>${monthsLeft} meses restantes</span>
+                        </div>
+                    </div>
+                    
+                    <div class="goal-monthly">
+                        <div class="goal-monthly-label">Valor mensal necessário:</div>
+                        <div class="goal-monthly-value">R$ ${monthlyTarget.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                    </div>
+                    
+                    <div class="goal-amount">R$ ${goal.currentAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                    <div class="goal-target">Meta: R$ ${goal.targetAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+// 🔥 FUNÇÃO EDITGOAL CORRIGIDA - ADICIONE ESTA FUNÇÃO NOVA
+function editGoal(goalId) {
+    console.log("Editando meta:", goalId);
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) {
+        console.error("Meta não encontrada:", goalId);
+        showNotification('Meta não encontrada', 'error');
+        return;
+    }
+
+    // Preencher o modal com os dados da meta
+    document.getElementById('editGoalId').value = goal.id;
+    document.getElementById('editGoalName').value = goal.name;
+    document.getElementById('editGoalDescription').value = goal.description || '';
+    document.getElementById('editGoalCurrentAmount').value = goal.currentAmount || 0;
+    document.getElementById('editGoalTargetAmount').value = goal.targetAmount;
+    document.getElementById('editGoalTimeframe').value = goal.timeframe || 12;
+
+    // Mostrar o modal
+    document.getElementById('editGoalModal').classList.add('active');
+}
+
+function closeEditGoalModal() {
+    document.getElementById('editGoalModal').classList.remove('active');
+}
+
+async function updateGoal() {
+    const goalId = document.getElementById('editGoalId').value;
+    const name = document.getElementById('editGoalName').value.trim();
+    const description = document.getElementById('editGoalDescription').value.trim();
+    const currentAmount = parseFloat(document.getElementById('editGoalCurrentAmount').value) || 0;
+    const targetAmount = parseFloat(document.getElementById('editGoalTargetAmount').value);
+    const timeframe = parseInt(document.getElementById('editGoalTimeframe').value);
+
+    if (!name || !description || isNaN(targetAmount) || targetAmount <= 0 || isNaN(timeframe) || timeframe <= 0) {
+        showNotification('Preencha todos os campos obrigatórios', 'error');
+        return;
+    }
+
+    try {
+        await db.collection('users').doc(currentUser.uid)
+            .collection('goals')
+            .doc(goalId)
+            .update({
                 name: name,
                 description: description,
                 currentAmount: currentAmount,
                 targetAmount: targetAmount,
                 timeframe: timeframe,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
+            });
 
-            try {
-                const docRef = await db.collection('users').doc(userId).collection('goals').add(newGoalData);
-
-                goals.unshift({ 
-                    id: docRef.id, 
-                    ...newGoalData
-                });
-
-                closeAddGoalModal();
-                loadGoals();
-                
-                showNotification('Meta criada com sucesso!', 'success');
-
-            } catch (error) {
-                console.error("❌ Erro ao criar meta:", error);
-                showNotification("Erro ao criar meta: " + error.message, "error");
-            }
-        }
+        closeEditGoalModal();
+        loadGoals();
+        showNotification('Meta atualizada com sucesso!', 'success');
+    } catch (error) {
+        console.error("❌ Erro ao atualizar meta:", error);
+        showNotification("Erro ao atualizar: " + error.message, "error");
+    }
+}
 
         async function loadGoals() {
             if (!currentUser) return;
@@ -3903,28 +4497,6 @@
             } catch (error) {
                 console.error("❌ Erro ao atualizar meta:", error);
                 showNotification("Erro ao atualizar: " + error.message, "error");
-            }
-        }
-
-        async function deleteGoal() {
-            const goalId = document.getElementById('editGoalId').value;
-
-            if (!confirm('Tem certeza que deseja excluir esta meta?')) {
-                return;
-            }
-
-            try {
-                await db.collection('users').doc(currentUser.uid)
-                    .collection('goals')
-                    .doc(goalId)
-                    .delete();
-
-                closeEditGoalModal();
-                loadGoals();
-                showNotification('Meta excluída com sucesso!', 'success');
-            } catch (error) {
-                console.error("❌ Erro ao excluir meta:", error);
-                showNotification("Erro ao excluir: " + error.message, "error");
             }
         }
 
@@ -4139,120 +4711,6 @@
             });
         }
 
-        // Investment Portfolio
-        function setupInvestmentPortfolio() {
-            const portfolioContainer = document.getElementById('investmentPortfolio');
-            
-            // Sample investments with better structure
-            investments = [
-                {
-                    id: '1',
-                    name: 'Tesouro Selic 2026',
-                    type: 'Renda Fixa',
-                    category: 'Tesouro Direto',
-                    amount: 5000,
-                    profitability: 12.5,
-                    monthlyReturn: 45.20,
-                    icon: 'fas fa-landmark',
-                    color: '#0066FF',
-                    trend: 'positive'
-                },
-                {
-                    id: '2',
-                    name: 'PETR4',
-                    type: 'Ações',
-                    category: 'Energia',
-                    amount: 3000,
-                    profitability: 8.2,
-                    monthlyReturn: 22.15,
-                    icon: 'fas fa-chart-line',
-                    color: '#00D4AA',
-                    trend: 'positive'
-                },
-                {
-                    id: '3',
-                    name: 'BOVA11',
-                    type: 'ETF',
-                    category: 'Índice',
-                    amount: 2500,
-                    profitability: 6.8,
-                    monthlyReturn: 15.80,
-                    icon: 'fas fa-chart-bar',
-                    color: '#FF6B35',
-                    trend: 'positive'
-                },
-                {
-                    id: '4',
-                    name: 'CDB Banco XP',
-                    type: 'Renda Fixa',
-                    category: 'CDB',
-                    amount: 1800,
-                    profitability: 11.2,
-                    monthlyReturn: 18.45,
-                    icon: 'fas fa-university',
-                    color: '#9B59B6',
-                    trend: 'positive'
-                }
-            ];
-
-            // Calculate portfolio totals
-            const totalPortfolio = investments.reduce((sum, inv) => sum + inv.amount, 0);
-            const totalMonthlyReturn = investments.reduce((sum, inv) => sum + inv.monthlyReturn, 0);
-            const avgProfitability = investments.reduce((sum, inv) => sum + inv.profitability, 0) / investments.length;
-
-            // Update portfolio stats
-            document.getElementById('portfolioTotal').textContent = `R$ ${totalPortfolio.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('portfolioReturn').textContent = `+${avgProfitability.toFixed(1)}%`;
-            document.getElementById('portfolioDividends').textContent = `R$ ${totalMonthlyReturn.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-
-            // Update portfolio list
-            portfolioContainer.innerHTML = investments.map(investment => `
-                <div class="portfolio-item" onclick="editInvestment('${investment.id}')">
-                    <div class="portfolio-item-content">
-                        <div class="portfolio-item-info">
-                            <div class="portfolio-item-header">
-                                <div class="portfolio-item-icon" style="background: rgba(${hexToRgb(investment.color)}, 0.2); color: ${investment.color}">
-                                    <i class="${investment.icon}"></i>
-                                </div>
-                                <div>
-                                    <div class="portfolio-item-name">${investment.name}</div>
-                                    <div class="portfolio-item-details">
-                                        <span>${investment.type}</span>
-                                        <span>•</span>
-                                        <span>${investment.category}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="portfolio-item-amount">
-                                R$ ${investment.amount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                            </div>
-                            <div class="portfolio-item-profitability ${investment.trend}">
-                                <i class="fas fa-arrow-${investment.trend === 'positive' ? 'up' : 'down'}"></i>
-                                ${investment.profitability}% a.a.
-                            </div>
-                        </div>
-                        <div class="portfolio-item-actions">
-                            <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); editInvestment('${investment.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteInvestment('${investment.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            updatePortfolioChart();
-        }
-
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? 
-                `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` 
-                : '0, 102, 255';
-        }
-
         function updatePortfolioChart() {
             const ctx = document.getElementById('portfolioChart').getContext('2d');
             
@@ -4260,10 +4718,31 @@
                 portfolioChart.destroy();
             }
 
-            const labels = investments.map(inv => inv.name);
-            const data = investments.map(inv => inv.amount);
-            const backgroundColors = investments.map(inv => `${inv.color}80`);
-            const borderColors = investments.map(inv => inv.color);
+            const labels = investments.map(inv => {
+                const typeLabels = {
+                    'compound-interest': 'Juros Compostos',
+                    'stock': 'Ações',
+                    'fixed-income': 'Renda Fixa'
+                };
+                return typeLabels[inv.type] || 'Investimento';
+            });
+            const data = investments.map(inv => inv.finalAmount || 0);
+            const backgroundColors = investments.map(inv => {
+                const typeColors = {
+                    'compound-interest': '#0066FF',
+                    'stock': '#00D4AA',
+                    'fixed-income': '#9B59B6'
+                };
+                return `${typeColors[inv.type] || '#0066FF'}80`;
+            });
+            const borderColors = investments.map(inv => {
+                const typeColors = {
+                    'compound-interest': '#0066FF',
+                    'stock': '#00D4AA',
+                    'fixed-income': '#9B59B6'
+                };
+                return typeColors[inv.type] || '#0066FF';
+            });
 
             portfolioChart = new Chart(ctx, {
                 type: 'doughnut',
@@ -4293,60 +4772,6 @@
                     }
                 }
             });
-        }
-
-        function editInvestment(investmentId) {
-            const investment = investments.find(inv => inv.id === investmentId);
-            if (!investment) return;
-            
-            showNotification(`Editando: ${investment.name}`, 'info');
-        }
-
-        function deleteInvestment(investmentId) {
-            const investment = investments.find(inv => inv.id === investmentId);
-            if (!investment) return;
-            
-            if (confirm(`Tem certeza que deseja excluir ${investment.name}?`)) {
-                showNotification(`${investment.name} excluído do portfólio`, 'success');
-                // Here you would typically remove from database
-            }
-        }
-
-        function showSimulator(type) {
-            // Hide all simulators first
-            document.querySelectorAll('.simulator-section').forEach(section => {
-                if (section.id && section.id.includes('simulator')) {
-                    section.style.display = 'none';
-                }
-            });
-
-            // Show selected simulator
-            const simulator = document.getElementById(`${type}-simulator`);
-            if (simulator) {
-                simulator.style.display = 'block';
-                
-                // If it's the compound interest simulator, ensure the chart is updated
-                if (type === 'juros-compostos') {
-                    setTimeout(() => {
-                        calculateCompoundInterest();
-                    }, 100);
-                }
-            } else {
-                // If specific simulator not found, show compound interest by default
-                const defaultSimulator = document.getElementById('juros-compostos-simulator');
-                if (defaultSimulator) {
-                    defaultSimulator.style.display = 'block';
-                    setTimeout(() => {
-                        calculateCompoundInterest();
-                    }, 100);
-                }
-            }
-            
-            showNotification(`Simulador ${type} aberto!`, 'info');
-        }
-
-        function showTransactionDetails(type) {
-            showNotification(`Detalhes das ${type === 'revenue' ? 'receitas' : 'despesas'}`, 'info');
         }
 
         function showNotification(message, type = 'info') {
@@ -4390,33 +4815,103 @@
             return icons[type] || 'info-circle';
         }
 
-        function generateReport() {
-            showNotification('Relatório gerado com sucesso!', 'success');
-        }
+        // 🔥 MODAL PARA ADICIONAR INVESTIMENTO - FUNÇÃO CORRIGIDA
+function showAddInvestmentModal() {
+    // Criar modal dinâmico se não existir
+    let modal = document.getElementById('addInvestmentModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'addInvestmentModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Novo Investimento</h3>
+                    <button class="modal-close" onclick="closeAddInvestmentModal()">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tipo de Investimento</label>
+                    <select class="form-input" id="investmentType">
+                        <option value="compound-interest">Juros Compostos</option>
+                        <option value="stock">Ações</option>
+                        <option value="fixed-income">Renda Fixa</option>
+                        <option value="funds">Fundos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nome do Investimento</label>
+                    <input type="text" class="form-input" id="investmentName" placeholder="Ex: CDB, Tesouro Direto, Ações...">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Valor Investido (R$)</label>
+                        <input type="number" class="form-input" id="investmentAmount" value="1000" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Taxa Anual (%)</label>
+                        <input type="number" class="form-input" id="investmentRate" value="8" step="0.1" min="0">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-outline" onclick="closeAddInvestmentModal()">Cancelar</button>
+                    <button class="btn btn-success" onclick="addInvestment()">
+                        <i class="fas fa-plus"></i> Adicionar Investimento
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    modal.classList.add('active');
+}
 
-        function showAddInvestmentModal() {
-            showNotification('Modal de adicionar investimento!', 'info');
-        }
+function closeAddInvestmentModal() {
+    const modal = document.getElementById('addInvestmentModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
 
-        // Initialize the compound interest calculator when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            checkLoggedInUser();
-            
-            // Set default dates for custom report
-            const now = new Date();
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            
-            document.getElementById('reportStartDate').value = firstDay.toISOString().split('T')[0];
-            document.getElementById('reportEndDate').value = lastDay.toISOString().split('T')[0];
-            
-            // Ensure the simulator is calculated when the page loads
-            setTimeout(() => {
-                if (document.getElementById('juros-compostos-simulator')) {
-                    calculateCompoundInterest();
-                }
-            }, 1000);
-        });
+// 🔥 ADICIONAR INVESTIMENTO MANUAL
+async function addInvestment() {
+    if (!currentUser) {
+        showNotification('Você precisa estar logado', 'error');
+        return;
+    }
+
+    const type = document.getElementById('investmentType').value;
+    const name = document.getElementById('investmentName').value.trim();
+    const amount = parseFloat(document.getElementById('investmentAmount').value) || 0;
+    const rate = parseFloat(document.getElementById('investmentRate').value) || 0;
+
+    if (!name || amount <= 0) {
+        showNotification('Preencha todos os campos corretamente', 'error');
+        return;
+    }
+
+    const investmentData = {
+        type: type,
+        name: name,
+        initialAmount: amount,
+        currentAmount: amount,
+        annualRate: rate,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    try {
+        await db.collection('users').doc(currentUser.uid)
+            .collection('investments')
+            .add(investmentData);
+
+        closeAddInvestmentModal();
+        loadInvestments();
+        showNotification('Investimento adicionado com sucesso!', 'success');
+    } catch (error) {
+        console.error("❌ Erro ao adicionar investimento:", error);
+        showNotification("Erro ao adicionar: " + error.message, "error");
+    }
+}
     </script>
 </body>
 </html>
