@@ -2671,29 +2671,48 @@
         let currentSimulator = null;
 
         // ===== FIREBASE INITIALIZATION =====
-        function initializeFirebase() {
-            try {
-                const firebaseConfig = {
-                    apiKey: "AIzaSyCfymo5Fn9skpk03PmGZ0KjDt8ONbwD1rs",
-                    authDomain: "nexusfinance-bab8e.firebaseapp.com",
-                    projectId: "nexusfinance-bab8e",
-                    storageBucket: "nexusfinance-bab8e.firebasestorage.app",
-                    messagingSenderId: "751159627519",
-                    appId: "1:751159627519:web:88b4dd9b395bc4229606ca",
-                    measurementId: "G-Q134TR8RGD"
-                };
-                
-                firebase.initializeApp(firebaseConfig);
-                auth = firebase.auth();
-                db = firebase.firestore();
-                
-                console.log("✅ Firebase inicializado com sucesso!");
-                return true;
-            } catch (error) {
-                console.error("❌ Erro ao inicializar Firebase:", error);
-                return false;
-            }
+function initializeFirebase() {
+    try {
+        // Verificar se o Firebase já foi inicializado
+        if (firebase.apps.length > 0) {
+            console.log("✅ Firebase já está inicializado");
+            auth = firebase.auth();
+            db = firebase.firestore();
+            return true;
         }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfymo5Fn9skpk03PmGZ0KjDt8ONbwD1rs",
+            authDomain: "nexusfinance-bab8e.firebaseapp.com",
+            projectId: "nexusfinance-bab8e",
+            storageBucket: "nexusfinance-bab8e.firebasestorage.app",
+            messagingSenderId: "751159627519",
+            appId: "1:751159627519:web:88b4dd9b395bc4229606ca",
+            measurementId: "G-Q134TR8RGD"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+        
+        console.log("✅ Firebase inicializado com sucesso!");
+        return true;
+    } catch (error) {
+        console.error("❌ Erro ao inicializar Firebase:", error);
+        
+        // Tentar fallback - verificar se já existe uma instância
+        try {
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log("✅ Firebase recuperado com sucesso!");
+            return true;
+        } catch (fallbackError) {
+            console.error("❌ Erro no fallback do Firebase:", fallbackError);
+            return false;
+        }
+    }
+}
 
         // ===== FUNÇÕES CORRIGIDAS PARA INVESTIMENTOS =====
 
@@ -3180,123 +3199,185 @@ function updateInvestmentPortfolio() {
         // (Mantendo todas as funções originais, apenas adaptando as que precisam de confirmação)
 
         // Check logged in user
-        function checkLoggedInUser() {
-            if (!initializeFirebase()) {
-                console.log('❌ Firebase não inicializado');
-                return;
-            }
+function checkLoggedInUser() {
+    console.log("🔍 Verificando usuário logado...");
+    
+    if (!initializeFirebase()) {
+        console.log('❌ Firebase não inicializado');
+        showNotification('Erro de conexão. Recarregue a página.', 'error');
+        return;
+    }
+    
+    // Aguardar um pouco para garantir que o Firebase está pronto
+    setTimeout(() => {
+        auth.onAuthStateChanged((user) => {
+            console.log("📱 Estado de autenticação:", user ? "Logado" : "Deslogado");
             
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    db.collection('users').doc(user.uid).get()
-                        .then((doc) => {
-                            if (doc.exists) {
-                                const userData = doc.data();
-                                currentUser = {
-                                    uid: user.uid,
-                                    name: userData.name,
-                                    email: userData.email,
-                                    avatar: userData.avatar
-                                };
-                                showApp();
-                            }
-                        })
-                        .catch((error) => {
-                            console.error('❌ Erro ao carregar dados do usuário:', error);
-                        });
-                } else {
-                    hideApp();
-                }
-            });
-        }
+            if (user) {
+                console.log("👤 Usuário encontrado:", user.email);
+                db.collection('users').doc(user.uid).get()
+                    .then((doc) => {
+                        if (doc.exists) {
+                            const userData = doc.data();
+                            currentUser = {
+                                uid: user.uid,
+                                name: userData.name,
+                                email: userData.email,
+                                avatar: userData.avatar
+                            };
+                            console.log("✅ Dados do usuário carregados:", currentUser.name);
+                            showApp();
+                        } else {
+                            console.log("❌ Documento do usuário não existe");
+                            hideApp();
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('❌ Erro ao carregar dados do usuário:', error);
+                        hideApp();
+                    });
+            } else {
+                console.log("👤 Nenhum usuário logado");
+                hideApp();
+            }
+        });
+    }, 1000);
+}
 
         // Handle login
-        function handleLogin(event) {
-            event.preventDefault();
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    console.log("🔐 Tentando login para:", email);
+
+    // Verificar se o Firebase está inicializado
+    if (!auth) {
+        console.error("❌ Firebase Auth não disponível");
+        showNotification('Erro de conexão. Recarregue a página.', 'error');
+        return;
+    }
+
+    const btn = event.target.querySelector('button[type="submit"]') || event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+    btn.disabled = true;
+
+    auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            const user = userCredential.user;
+            console.log("✅ Login bem-sucedido:", user.email);
+            return db.collection('users').doc(user.uid).get();
+        })
+        .then((doc) => {
+            if (doc.exists) {
+                const userData = doc.data();
+                currentUser = {
+                    uid: auth.currentUser.uid,
+                    name: userData.name,
+                    email: userData.email,
+                    avatar: userData.avatar
+                };
+                showApp();
+                showNotification(`Bem-vindo de volta, ${userData.name}!`, 'success');
+            } else {
+                throw new Error('Dados do usuário não encontrados');
+            }
+        })
+        .catch((error) => {
+            console.error("❌ Erro no login:", error);
             
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-
-            const btn = event.target.querySelector('button[type="submit"]') || event.target;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
-            btn.disabled = true;
-
-            auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    return db.collection('users').doc(user.uid).get();
-                })
-                .then((doc) => {
-                    if (doc.exists) {
-                        const userData = doc.data();
-                        currentUser = {
-                            uid: auth.currentUser.uid,
-                            name: userData.name,
-                            email: userData.email,
-                            avatar: userData.avatar
-                        };
-                        showApp();
-                        showNotification(`Bem-vindo de volta, ${userData.name}!`, 'success');
-                    }
-                })
-                .catch((error) => {
-                    showNotification('E-mail ou senha incorretos', 'error');
-                })
-                .finally(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                });
-        }
-
+            let errorMessage = 'E-mail ou senha incorretos';
+            if (error.code === 'auth/invalid-email') {
+                errorMessage = 'E-mail inválido';
+            } else if (error.code === 'auth/user-not-found') {
+                errorMessage = 'Usuário não encontrado';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage = 'Senha incorreta';
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage = 'Erro de conexão. Verifique sua internet.';
+            }
+            
+            showNotification(errorMessage, 'error');
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+}
         // Handle register
-        function handleRegister(event) {
-            event.preventDefault();
+function handleRegister(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('registerName').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
+    const password = document.getElementById('registerPassword').value;
+
+    console.log("📝 Tentando cadastro para:", email);
+
+    // Verificar se o Firebase está inicializado
+    if (!auth) {
+        console.error("❌ Firebase Auth não disponível");
+        showNotification('Erro de conexão. Recarregue a página.', 'error');
+        return;
+    }
+
+    const btn = event.target.querySelector('button[type="submit"]') || event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando conta...';
+    btn.disabled = true;
+
+    auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            const user = userCredential.user;
+            console.log("✅ Cadastro bem-sucedido:", user.email);
+            return db.collection('users').doc(user.uid).set({
+                name: name,
+                email: email,
+                avatar: getInitials(name),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        })
+        .then(() => {
+            return db.collection('users').doc(auth.currentUser.uid).get();
+        })
+        .then((doc) => {
+            if (doc.exists) {
+                const userData = doc.data();
+                currentUser = {
+                    uid: auth.currentUser.uid,
+                    name: userData.name,
+                    email: userData.email,
+                    avatar: userData.avatar
+                };
+                showApp();
+                showNotification(`Conta criada com sucesso! Bem-vindo, ${name}!`, 'success');
+            }
+        })
+        .catch((error) => {
+            console.error("❌ Erro no cadastro:", error);
             
-            const name = document.getElementById('registerName').value.trim();
-            const email = document.getElementById('registerEmail').value.trim();
-            const password = document.getElementById('registerPassword').value;
-
-            const btn = event.target.querySelector('button[type="submit"]') || event.target;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando conta...';
-            btn.disabled = true;
-
-            auth.createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    return db.collection('users').doc(user.uid).set({
-                        name: name,
-                        email: email,
-                        avatar: getInitials(name),
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                })
-                .then(() => {
-                    return db.collection('users').doc(auth.currentUser.uid).get();
-                })
-                .then((doc) => {
-                    if (doc.exists) {
-                        const userData = doc.data();
-                        currentUser = {
-                            uid: auth.currentUser.uid,
-                            name: userData.name,
-                            email: userData.email,
-                            avatar: userData.avatar
-                        };
-                        showApp();
-                        showNotification(`Conta criada com sucesso! Bem-vindo, ${name}!`, 'success');
-                    }
-                })
-                .catch((error) => {
-                    showNotification('Erro ao criar conta: ' + error.message, 'error');
-                })
-                .finally(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                });
-        }
+            let errorMessage = 'Erro ao criar conta';
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'Este e-mail já está em uso';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'E-mail inválido';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'Senha muito fraca (mínimo 6 caracteres)';
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage = 'Erro de conexão. Verifique sua internet.';
+            }
+            
+            showNotification(errorMessage, 'error');
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+}
 
         // Auth tab management
         function switchAuthTab(tab, event) {
