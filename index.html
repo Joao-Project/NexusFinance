@@ -2756,7 +2756,7 @@ function initializeFirebase() {
             }
         }
 
-        // 🔥 CORREÇÃO: Carregar investimentos do Firebase
+        // 🔥 CORREÇÃO: Carregar investimentos do Firebase SEM criar exemplos
 async function loadInvestments() {
     if (!currentUser) return;
 
@@ -2775,67 +2775,21 @@ async function loadInvestments() {
             });
         });
 
-        // Se não houver investimentos, criar alguns exemplos
-        if (investments.length === 0) {
-            await createSampleInvestments();
-        } else {
-            updateInvestmentPortfolio();
-        }
+        console.log(`📊 ${investments.length} investimentos carregados`);
+        updateInvestmentPortfolio();
+        
     } catch (error) {
         console.error("❌ Erro ao carregar investimentos:", error);
-        // Criar investimentos de exemplo
-        createSampleInvestments();
+        // NÃO criar exemplos automaticamente em caso de erro
+        updateInvestmentPortfolio(); // Atualiza com array vazio
     }
 }
 
-// 🔥 CRIAR INVESTIMENTOS DE EXEMPLO
-async function createSampleInvestments() {
-    if (!currentUser) return;
-
-    const sampleInvestments = [
-        {
-            type: 'compound-interest',
-            name: 'Simulação CDB',
-            initialAmount: 5000,
-            currentAmount: 5250,
-            annualRate: 8,
-            finalAmount: 12500,
-            totalInvested: 6500,
-            totalInterest: 6000,
-            createdAt: new Date()
-        },
-        {
-            type: 'stock',
-            name: 'Ações Diversificadas',
-            initialAmount: 3000,
-            currentAmount: 3450,
-            annualRate: 15,
-            createdAt: new Date()
-        }
-    ];
-
-    try {
-        for (const investment of sampleInvestments) {
-            await db.collection('users').doc(currentUser.uid)
-                .collection('investments')
-                .add({
-                    ...investment,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-        }
-        
-        loadInvestments(); // Recarregar após criar exemplos
-    } catch (error) {
-        console.error("❌ Erro ao criar investimentos de exemplo:", error);
-        setupSampleInvestments(); // Usar dados locais em caso de erro
-    }
-}
 
         // 🔥 CORREÇÃO: Função para setup do portfólio
         function setupInvestmentPortfolio() {
-            loadInvestments(); // Agora carrega do Firebase
-        }
+    loadInvestments(); // Agora só carrega do Firebase, sem criar exemplos
+}
 
         // 🔥 CORREÇÃO: Atualizar portfólio com dados reais
 function updateInvestmentPortfolio() {
