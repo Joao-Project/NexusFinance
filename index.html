@@ -1852,6 +1852,55 @@
         .investment-dashboard .investment-cards {
             margin-bottom: 30px;
         }
+
+        /* 🔥 NOVOS ESTILOS PARA METAS */
+        .goals-checkbox-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .goal-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .goal-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid var(--primary);
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .goal-checkbox:checked {
+            background: var(--primary);
+        }
+
+        .goal-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .goal-checkbox-label {
+            font-weight: 500;
+            color: var(--light);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -2213,7 +2262,7 @@
                 </div>
             </div>
 
-            <!-- Goals Tab -->
+            <!-- Goals Tab - CORRIGIDA -->
             <div id="goals" class="tab-content">
                 <div class="simulator-section">
                     <div class="section-header">
@@ -2222,6 +2271,19 @@
                             <i class="fas fa-plus"></i> Nova Meta
                         </button>
                     </div>
+                    
+                    <!-- Checkbox Section similar to the image -->
+                    <div class="goals-checkbox-section">
+                        <div class="goal-checkbox-item">
+                            <input type="checkbox" id="novemberGoal" class="goal-checkbox">
+                            <label for="novemberGoal" class="goal-checkbox-label">Novembro</label>
+                        </div>
+                        <div class="goal-checkbox-item">
+                            <input type="checkbox" id="year2025Goal" class="goal-checkbox" checked>
+                            <label for="year2025Goal" class="goal-checkbox-label">2025</label>
+                        </div>
+                    </div>
+                    
                     <div class="goals-grid" id="goalsList">
                         <!-- Goals will be populated here -->
                     </div>
@@ -2657,6 +2719,45 @@
         </div>
     </div>
 
+    <!-- 🔥 MODAL PARA ADICIONAR INVESTIMENTO -->
+    <div id="addInvestmentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Investimento</h3>
+                <button class="modal-close" onclick="closeAddInvestmentModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tipo de Investimento</label>
+                <select class="form-input" id="investmentType">
+                    <option value="compound-interest">Juros Compostos</option>
+                    <option value="stock">Ações</option>
+                    <option value="fixed-income">Renda Fixa</option>
+                    <option value="funds">Fundos</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nome do Investimento</label>
+                <input type="text" class="form-input" id="investmentName" placeholder="Ex: CDB, Tesouro Direto, Ações...">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Valor Investido (R$)</label>
+                    <input type="number" class="form-input" id="investmentAmount" value="1000" min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Taxa Anual (%)</label>
+                    <input type="number" class="form-input" id="investmentRate" value="8" step="0.1" min="0">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-outline" onclick="closeAddInvestmentModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="addInvestment()">
+                    <i class="fas fa-plus"></i> Adicionar Investimento
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ===== VARIÁVEIS GLOBAIS =====
         let currentUser = null;
@@ -2671,43 +2772,43 @@
         let currentSimulator = null;
 
         // ===== FIREBASE INITIALIZATION =====
-function initializeFirebase() {
-    try {
-        console.log("🚀 Inicializando Firebase...");
-        
-        // Verificar se o Firebase foi carregado
-        if (typeof firebase === 'undefined') {
-            console.error("❌ Firebase não carregado");
-            return false;
+        function initializeFirebase() {
+            try {
+                console.log("🚀 Inicializando Firebase...");
+                
+                // Verificar se o Firebase foi carregado
+                if (typeof firebase === 'undefined') {
+                    console.error("❌ Firebase não carregado");
+                    return false;
+                }
+
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCfymo5Fn9skpk03PmGZ0KjDt8ONbwD1rs",
+                    authDomain: "nexusfinance-bab8e.firebaseapp.com",
+                    projectId: "nexusfinance-bab8e",
+                    storageBucket: "nexusfinance-bab8e.firebasestorage.app",
+                    messagingSenderId: "751159627519",
+                    appId: "1:751159627519:web:88b4dd9b395bc4229606ca",
+                    measurementId: "G-Q134TR8RGD"
+                };
+
+                // Inicializar Firebase
+                firebase.initializeApp(firebaseConfig);
+                
+                // Atribuir auth e db
+                auth = firebase.auth();
+                db = firebase.firestore();
+                
+                console.log("✅ Firebase inicializado com sucesso!");
+                console.log("🔑 Auth disponível:", !!auth);
+                console.log("🗄️ Firestore disponível:", !!db);
+                
+                return true;
+            } catch (error) {
+                console.error("❌ Erro ao inicializar Firebase:", error);
+                return false;
+            }
         }
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCfymo5Fn9skpk03PmGZ0KjDt8ONbwD1rs",
-            authDomain: "nexusfinance-bab8e.firebaseapp.com",
-            projectId: "nexusfinance-bab8e",
-            storageBucket: "nexusfinance-bab8e.firebasestorage.app",
-            messagingSenderId: "751159627519",
-            appId: "1:751159627519:web:88b4dd9b395bc4229606ca",
-            measurementId: "G-Q134TR8RGD"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        
-        // Atribuir auth e db
-        auth = firebase.auth();
-        db = firebase.firestore();
-        
-        console.log("✅ Firebase inicializado com sucesso!");
-        console.log("🔑 Auth disponível:", !!auth);
-        console.log("🗄️ Firestore disponível:", !!db);
-        
-        return true;
-    } catch (error) {
-        console.error("❌ Erro ao inicializar Firebase:", error);
-        return false;
-    }
-}
 
         // ===== FUNÇÕES CORRIGIDAS PARA INVESTIMENTOS =====
 
@@ -2757,158 +2858,139 @@ function initializeFirebase() {
         }
 
         // 🔥 CORREÇÃO: Carregar investimentos do Firebase SEM criar exemplos
-async function loadInvestments() {
-    if (!currentUser) return;
+        async function loadInvestments() {
+            if (!currentUser) return;
 
-    try {
-        const snapshot = await db.collection('users').doc(currentUser.uid)
-            .collection('investments')
-            .orderBy('createdAt', 'desc')
-            .get();
+            try {
+                const snapshot = await db.collection('users').doc(currentUser.uid)
+                    .collection('investments')
+                    .orderBy('createdAt', 'desc')
+                    .get();
 
-        investments = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            investments.push({
-                id: doc.id,
-                ...data
-            });
-        });
+                investments = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    investments.push({
+                        id: doc.id,
+                        ...data
+                    });
+                });
 
-        console.log(`📊 ${investments.length} investimentos carregados`);
-        updateInvestmentPortfolio();
-        
-    } catch (error) {
-        console.error("❌ Erro ao carregar investimentos:", error);
-        // NÃO criar exemplos automaticamente em caso de erro
-        updateInvestmentPortfolio(); // Atualiza com array vazio
-    }
-}
-
+                console.log(`📊 ${investments.length} investimentos carregados`);
+                updateInvestmentPortfolio();
+                
+            } catch (error) {
+                console.error("❌ Erro ao carregar investimentos:", error);
+                // NÃO criar exemplos automaticamente em caso de erro
+                updateInvestmentPortfolio(); // Atualiza com array vazio
+            }
+        }
 
         // 🔥 CORREÇÃO: Função para setup do portfólio
         function setupInvestmentPortfolio() {
-    loadInvestments(); // Agora só carrega do Firebase, sem criar exemplos
-}
+            loadInvestments(); // Agora só carrega do Firebase, sem criar exemplos
+        }
 
         // 🔥 CORREÇÃO: Atualizar portfólio com dados reais
-function updateInvestmentPortfolio() {
-    const portfolioContainer = document.getElementById('investmentPortfolio');
-    
-    if (!investments || investments.length === 0) {
-        portfolioContainer.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-chart-line"></i>
-                <h3>Nenhum investimento cadastrado</h3>
-                <p>Comece criando seu primeiro investimento</p>
-                <button class="btn" onclick="showAddInvestmentModal()" style="margin-top: 15px;">
-                    <i class="fas fa-plus"></i> Adicionar Investimento
-                </button>
-            </div>
-        `;
-        
-        // Reset stats
-        document.getElementById('portfolioTotal').textContent = 'R$ 0,00';
-        document.getElementById('portfolioReturn').textContent = '+0%';
-        document.getElementById('portfolioDividends').textContent = 'R$ 0,00';
-        return;
-    }
-
-    // Calcular totais do portfólio
-    const totalPortfolio = investments.reduce((sum, inv) => sum + (inv.currentAmount || inv.finalAmount || 0), 0);
-    const totalInvested = investments.reduce((sum, inv) => sum + (inv.initialAmount || inv.totalInvested || 0), 0);
-    const totalProfit = totalPortfolio - totalInvested;
-    const avgProfitability = totalInvested > 0 ? (totalProfit / totalInvested * 100) : 0;
-
-    // Atualizar estatísticas
-    document.getElementById('portfolioTotal').textContent = `R$ ${totalPortfolio.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-    document.getElementById('portfolioReturn').textContent = `${avgProfitability >= 0 ? '+' : ''}${avgProfitability.toFixed(1)}%`;
-    document.getElementById('portfolioDividends').textContent = `R$ ${totalProfit.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-
-    // Atualizar lista de investimentos
-    portfolioContainer.innerHTML = investments.map(investment => {
-        const typeLabels = {
-            'compound-interest': 'Juros Compostos',
-            'stock': 'Ações',
-            'fixed-income': 'Renda Fixa',
-            'funds': 'Fundos'
-        };
-        
-        const typeIcons = {
-            'compound-interest': 'fas fa-chart-line',
-            'stock': 'fas fa-chart-bar',
-            'fixed-income': 'fas fa-landmark',
-            'funds': 'fas fa-piggy-bank'
-        };
-        
-        const typeColors = {
-            'compound-interest': '#0066FF',
-            'stock': '#00D4AA',
-            'fixed-income': '#9B59B6',
-            'funds': '#FF6B35'
-        };
-        
-        const type = investment.type || 'compound-interest';
-        const currentValue = investment.currentAmount || investment.finalAmount || 0;
-        const investedValue = investment.initialAmount || investment.totalInvested || 0;
-        const profitability = investedValue > 0 ? 
-            ((currentValue - investedValue) / investedValue * 100) : 0;
-        const profitAmount = currentValue - investedValue;
-
-        return `
-            <div class="portfolio-item">
-                <div class="portfolio-item-content">
-                    <div class="portfolio-item-info">
-                        <div class="portfolio-item-header">
-                            <div class="portfolio-item-icon" style="background: rgba(${hexToRgb(typeColors[type])}, 0.2); color: ${typeColors[type]}">
-                                <i class="${typeIcons[type]}"></i>
-                            </div>
-                            <div>
-                                <div class="portfolio-item-name">${investment.name || typeLabels[type]}</div>
-                                <div class="portfolio-item-details">
-                                    <span>${investment.annualRate || 0}% a.a.</span>
-                                    <span>•</span>
-                                    <span>${typeLabels[type]}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="portfolio-item-amount">
-                            R$ ${currentValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                        </div>
-                        <div class="portfolio-item-profitability ${profitability >= 0 ? 'positive' : 'negative'}">
-                            <i class="fas fa-arrow-${profitability >= 0 ? 'up' : 'down'}"></i>
-                            ${profitability >= 0 ? '+' : ''}${profitability.toFixed(1)}% (R$ ${Math.abs(profitAmount).toLocaleString('pt-BR', {minimumFractionDigits: 2})})
-                        </div>
-                    </div>
-                    <div class="portfolio-item-actions">
-                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteInvestment('${investment.id}', '${investment.name || typeLabels[type]}')">
-                            <i class="fas fa-trash"></i>
+        function updateInvestmentPortfolio() {
+            const portfolioContainer = document.getElementById('investmentPortfolio');
+            
+            if (!investments || investments.length === 0) {
+                portfolioContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Nenhum investimento cadastrado</h3>
+                        <p>Comece criando seu primeiro investimento</p>
+                        <button class="btn" onclick="showAddInvestmentModal()" style="margin-top: 15px;">
+                            <i class="fas fa-plus"></i> Adicionar Investimento
                         </button>
                     </div>
-                </div>
-            </div>
-        `;
-    }).join('');
+                `;
+                
+                // Reset stats
+                document.getElementById('portfolioTotal').textContent = 'R$ 0,00';
+                document.getElementById('portfolioReturn').textContent = '+0%';
+                document.getElementById('portfolioDividends').textContent = 'R$ 0,00';
+                return;
+            }
 
-    updatePortfolioChart();
-}
+            // Calcular totais do portfólio
+            const totalPortfolio = investments.reduce((sum, inv) => sum + (inv.currentAmount || inv.finalAmount || 0), 0);
+            const totalInvested = investments.reduce((sum, inv) => sum + (inv.initialAmount || inv.totalInvested || 0), 0);
+            const totalProfit = totalPortfolio - totalInvested;
+            const avgProfitability = totalInvested > 0 ? (totalProfit / totalInvested * 100) : 0;
 
-        // 🔥 CORREÇÃO: Dados de exemplo apenas se Firebase falhar
-        function setupSampleInvestments() {
-            investments = [
-                {
-                    id: '1',
-                    type: 'compound-interest',
-                    initialAmount: 5000,
-                    monthlyInvestment: 500,
-                    annualRate: 8,
-                    years: 10,
-                    finalAmount: 12500,
-                    totalInvested: 6500,
-                    totalInterest: 6000
-                }
-            ];
-            updateInvestmentPortfolio();
+            // Atualizar estatísticas
+            document.getElementById('portfolioTotal').textContent = `R$ ${totalPortfolio.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('portfolioReturn').textContent = `${avgProfitability >= 0 ? '+' : ''}${avgProfitability.toFixed(1)}%`;
+            document.getElementById('portfolioDividends').textContent = `R$ ${totalProfit.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+
+            // Atualizar lista de investimentos
+            portfolioContainer.innerHTML = investments.map(investment => {
+                const typeLabels = {
+                    'compound-interest': 'Juros Compostos',
+                    'stock': 'Ações',
+                    'fixed-income': 'Renda Fixa',
+                    'funds': 'Fundos'
+                };
+                
+                const typeIcons = {
+                    'compound-interest': 'fas fa-chart-line',
+                    'stock': 'fas fa-chart-bar',
+                    'fixed-income': 'fas fa-landmark',
+                    'funds': 'fas fa-piggy-bank'
+                };
+                
+                const typeColors = {
+                    'compound-interest': '#0066FF',
+                    'stock': '#00D4AA',
+                    'fixed-income': '#9B59B6',
+                    'funds': '#FF6B35'
+                };
+                
+                const type = investment.type || 'compound-interest';
+                const currentValue = investment.currentAmount || investment.finalAmount || 0;
+                const investedValue = investment.initialAmount || investment.totalInvested || 0;
+                const profitability = investedValue > 0 ? 
+                    ((currentValue - investedValue) / investedValue * 100) : 0;
+                const profitAmount = currentValue - investedValue;
+
+                return `
+                    <div class="portfolio-item">
+                        <div class="portfolio-item-content">
+                            <div class="portfolio-item-info">
+                                <div class="portfolio-item-header">
+                                    <div class="portfolio-item-icon" style="background: rgba(${hexToRgb(typeColors[type])}, 0.2); color: ${typeColors[type]}">
+                                        <i class="${typeIcons[type]}"></i>
+                                    </div>
+                                    <div>
+                                        <div class="portfolio-item-name">${investment.name || typeLabels[type]}</div>
+                                        <div class="portfolio-item-details">
+                                            <span>${investment.annualRate || 0}% a.a.</span>
+                                            <span>•</span>
+                                            <span>${typeLabels[type]}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="portfolio-item-amount">
+                                    R$ ${currentValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                                </div>
+                                <div class="portfolio-item-profitability ${profitability >= 0 ? 'positive' : 'negative'}">
+                                    <i class="fas fa-arrow-${profitability >= 0 ? 'up' : 'down'}"></i>
+                                    ${profitability >= 0 ? '+' : ''}${profitability.toFixed(1)}% (R$ ${Math.abs(profitAmount).toLocaleString('pt-BR', {minimumFractionDigits: 2})})
+                                </div>
+                            </div>
+                            <div class="portfolio-item-actions">
+                                <button class="btn btn-danger btn-sm" onclick="confirmDeleteInvestment('${investment.id}', '${investment.name || typeLabels[type]}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updatePortfolioChart();
         }
 
         // 🔥 NOVA FUNÇÃO: Modal de confirmação de exclusão
@@ -3148,203 +3230,204 @@ function updateInvestmentPortfolio() {
         // (Mantendo todas as funções originais, apenas adaptando as que precisam de confirmação)
 
         // Check logged in user
-function checkLoggedInUser() {
-    console.log("🔍 Verificando usuário logado...");
-    
-    if (!initializeFirebase()) {
-        console.log('❌ Firebase não inicializado');
-        showNotification('Erro de conexão. Recarregue a página.', 'error');
-        return;
-    }
-    
-    // Aguardar um pouco para garantir que o Firebase está pronto
-    setTimeout(() => {
-        auth.onAuthStateChanged((user) => {
-            console.log("📱 Estado de autenticação:", user ? "Logado" : "Deslogado");
+        function checkLoggedInUser() {
+            console.log("🔍 Verificando usuário logado...");
             
-            if (user) {
-                console.log("👤 Usuário encontrado:", user.email);
-                db.collection('users').doc(user.uid).get()
-                    .then((doc) => {
-                        if (doc.exists) {
-                            const userData = doc.data();
-                            currentUser = {
-                                uid: user.uid,
-                                name: userData.name,
-                                email: userData.email,
-                                avatar: userData.avatar
-                            };
-                            console.log("✅ Dados do usuário carregados:", currentUser.name);
-                            showApp();
-                        } else {
-                            console.log("❌ Documento do usuário não existe");
-                            hideApp();
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('❌ Erro ao carregar dados do usuário:', error);
+            if (!initializeFirebase()) {
+                console.log('❌ Firebase não inicializado');
+                showNotification('Erro de conexão. Recarregue a página.', 'error');
+                return;
+            }
+            
+            // Aguardar um pouco para garantir que o Firebase está pronto
+            setTimeout(() => {
+                auth.onAuthStateChanged((user) => {
+                    console.log("📱 Estado de autenticação:", user ? "Logado" : "Deslogado");
+                    
+                    if (user) {
+                        console.log("👤 Usuário encontrado:", user.email);
+                        db.collection('users').doc(user.uid).get()
+                            .then((doc) => {
+                                if (doc.exists) {
+                                    const userData = doc.data();
+                                    currentUser = {
+                                        uid: user.uid,
+                                        name: userData.name,
+                                        email: userData.email,
+                                        avatar: userData.avatar
+                                    };
+                                    console.log("✅ Dados do usuário carregados:", currentUser.name);
+                                    showApp();
+                                } else {
+                                    console.log("❌ Documento do usuário não existe");
+                                    hideApp();
+                                }
+                            })
+                            .catch((error) => {
+                                console.error('❌ Erro ao carregar dados do usuário:', error);
+                                hideApp();
+                            });
+                    } else {
+                        console.log("👤 Nenhum usuário logado");
                         hideApp();
-                    });
-            } else {
-                console.log("👤 Nenhum usuário logado");
-                hideApp();
-            }
-        });
-    }, 1000);
-}
-
-     // Handle login
-function handleLogin(event) {
-    event.preventDefault();
-    
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-
-    console.log("🔐 Tentando login para:", email);
-
-    // 🔥 VERIFICAÇÃO EXTRA - Tenta inicializar se não estiver disponível
-    if (!auth) {
-        console.log("🔄 Auth não disponível, tentando inicializar Firebase...");
-        if (!initializeFirebase()) {
-            showNotification('Erro de conexão. Recarregue a página.', 'error');
-            return;
+                    }
+                });
+            }, 1000);
         }
-    }
 
-    // Verificar novamente após tentativa de inicialização
-    if (!auth) {
-        console.error("❌ Firebase Auth ainda não disponível após inicialização");
-        showNotification('Erro crítico. Recarregue a página.', 'error');
-        return;
-    }
-
-    const btn = event.target.querySelector('button[type="submit"]') || event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
-    btn.disabled = true;
-
-    auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-            const user = userCredential.user;
-            console.log("✅ Login bem-sucedido:", user.email);
-            return db.collection('users').doc(user.uid).get();
-        })
-        .then((doc) => {
-            if (doc.exists) {
-                const userData = doc.data();
-                currentUser = {
-                    uid: auth.currentUser.uid,
-                    name: userData.name,
-                    email: userData.email,
-                    avatar: userData.avatar
-                };
-                showApp();
-                showNotification(`Bem-vindo de volta, ${userData.name}!`, 'success');
-            } else {
-                throw new Error('Dados do usuário não encontrados');
-            }
-        })
-        .catch((error) => {
-            console.error("❌ Erro no login:", error);
+        // Handle login
+        function handleLogin(event) {
+            event.preventDefault();
             
-            let errorMessage = 'E-mail ou senha incorretos';
-            if (error.code === 'auth/invalid-email') {
-                errorMessage = 'E-mail inválido';
-            } else if (error.code === 'auth/user-not-found') {
-                errorMessage = 'Usuário não encontrado';
-            } else if (error.code === 'auth/wrong-password') {
-                errorMessage = 'Senha incorreta';
-            } else if (error.code === 'auth/network-request-failed') {
-                errorMessage = 'Erro de conexão. Verifique sua internet.';
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            console.log("🔐 Tentando login para:", email);
+
+            // 🔥 VERIFICAÇÃO EXTRA - Tenta inicializar se não estiver disponível
+            if (!auth) {
+                console.log("🔄 Auth não disponível, tentando inicializar Firebase...");
+                if (!initializeFirebase()) {
+                    showNotification('Erro de conexão. Recarregue a página.', 'error');
+                    return;
+                }
             }
-            
-            showNotification(errorMessage, 'error');
-        })
-        .finally(() => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        });
-}
+
+            // Verificar novamente após tentativa de inicialização
+            if (!auth) {
+                console.error("❌ Firebase Auth ainda não disponível após inicialização");
+                showNotification('Erro crítico. Recarregue a página.', 'error');
+                return;
+            }
+
+            const btn = event.target.querySelector('button[type="submit"]') || event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+            btn.disabled = true;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    console.log("✅ Login bem-sucedido:", user.email);
+                    return db.collection('users').doc(user.uid).get();
+                })
+                .then((doc) => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        currentUser = {
+                            uid: auth.currentUser.uid,
+                            name: userData.name,
+                            email: userData.email,
+                            avatar: userData.avatar
+                        };
+                        showApp();
+                        showNotification(`Bem-vindo de volta, ${userData.name}!`, 'success');
+                    } else {
+                        throw new Error('Dados do usuário não encontrados');
+                    }
+                })
+                .catch((error) => {
+                    console.error("❌ Erro no login:", error);
+                    
+                    let errorMessage = 'E-mail ou senha incorretos';
+                    if (error.code === 'auth/invalid-email') {
+                        errorMessage = 'E-mail inválido';
+                    } else if (error.code === 'auth/user-not-found') {
+                        errorMessage = 'Usuário não encontrado';
+                    } else if (error.code === 'auth/wrong-password') {
+                        errorMessage = 'Senha incorreta';
+                    } else if (error.code === 'auth/network-request-failed') {
+                        errorMessage = 'Erro de conexão. Verifique sua internet.';
+                    }
+                    
+                    showNotification(errorMessage, 'error');
+                })
+                .finally(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+        }
+
         // Handle register
-function handleRegister(event) {
-    event.preventDefault();
-    
-    const name = document.getElementById('registerName').value.trim();
-    const email = document.getElementById('registerEmail').value.trim();
-    const password = document.getElementById('registerPassword').value;
+        function handleRegister(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
 
-    console.log("📝 Tentando cadastro para:", email);
+            console.log("📝 Tentando cadastro para:", email);
 
-    // 🔥 VERIFICAÇÃO EXTRA - Tenta inicializar se não estiver disponível
-    if (!auth) {
-        console.log("🔄 Auth não disponível, tentando inicializar Firebase...");
-        if (!initializeFirebase()) {
-            showNotification('Erro de conexão. Recarregue a página.', 'error');
-            return;
+            // 🔥 VERIFICAÇÃO EXTRA - Tenta inicializar se não estiver disponível
+            if (!auth) {
+                console.log("🔄 Auth não disponível, tentando inicializar Firebase...");
+                if (!initializeFirebase()) {
+                    showNotification('Erro de conexão. Recarregue a página.', 'error');
+                    return;
+                }
+            }
+
+            // Verificar novamente após tentativa de inicialização
+            if (!auth) {
+                console.error("❌ Firebase Auth ainda não disponível após inicialização");
+                showNotification('Erro crítico. Recarregue a página.', 'error');
+                return;
+            }
+
+            const btn = event.target.querySelector('button[type="submit"]') || event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando conta...';
+            btn.disabled = true;
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    console.log("✅ Cadastro bem-sucedido:", user.email);
+                    return db.collection('users').doc(user.uid).set({
+                        name: name,
+                        email: email,
+                        avatar: getInitials(name),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                })
+                .then(() => {
+                    return db.collection('users').doc(auth.currentUser.uid).get();
+                })
+                .then((doc) => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        currentUser = {
+                            uid: auth.currentUser.uid,
+                            name: userData.name,
+                            email: userData.email,
+                            avatar: userData.avatar
+                        };
+                        showApp();
+                        showNotification(`Conta criada com sucesso! Bem-vindo, ${name}!`, 'success');
+                    }
+                })
+                .catch((error) => {
+                    console.error("❌ Erro no cadastro:", error);
+                    
+                    let errorMessage = 'Erro ao criar conta';
+                    if (error.code === 'auth/email-already-in-use') {
+                        errorMessage = 'Este e-mail já está em uso';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = 'E-mail inválido';
+                    } else if (error.code === 'auth/weak-password') {
+                        errorMessage = 'Senha muito fraca (mínimo 6 caracteres)';
+                    } else if (error.code === 'auth/network-request-failed') {
+                        errorMessage = 'Erro de conexão. Verifique sua internet.';
+                    }
+                    
+                    showNotification(errorMessage, 'error');
+                })
+                .finally(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
         }
-    }
-
-    // Verificar novamente após tentativa de inicialização
-    if (!auth) {
-        console.error("❌ Firebase Auth ainda não disponível após inicialização");
-        showNotification('Erro crítico. Recarregue a página.', 'error');
-        return;
-    }
-
-    const btn = event.target.querySelector('button[type="submit"]') || event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando conta...';
-    btn.disabled = true;
-
-    auth.createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-            const user = userCredential.user;
-            console.log("✅ Cadastro bem-sucedido:", user.email);
-            return db.collection('users').doc(user.uid).set({
-                name: name,
-                email: email,
-                avatar: getInitials(name),
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        })
-        .then(() => {
-            return db.collection('users').doc(auth.currentUser.uid).get();
-        })
-        .then((doc) => {
-            if (doc.exists) {
-                const userData = doc.data();
-                currentUser = {
-                    uid: auth.currentUser.uid,
-                    name: userData.name,
-                    email: userData.email,
-                    avatar: userData.avatar
-                };
-                showApp();
-                showNotification(`Conta criada com sucesso! Bem-vindo, ${name}!`, 'success');
-            }
-        })
-        .catch((error) => {
-            console.error("❌ Erro no cadastro:", error);
-            
-            let errorMessage = 'Erro ao criar conta';
-            if (error.code === 'auth/email-already-in-use') {
-                errorMessage = 'Este e-mail já está em uso';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMessage = 'E-mail inválido';
-            } else if (error.code === 'auth/weak-password') {
-                errorMessage = 'Senha muito fraca (mínimo 6 caracteres)';
-            } else if (error.code === 'auth/network-request-failed') {
-                errorMessage = 'Erro de conexão. Verifique sua internet.';
-            }
-            
-            showNotification(errorMessage, 'error');
-        })
-        .finally(() => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        });
-}
 
         // Auth tab management
         function switchAuthTab(tab, event) {
@@ -4223,202 +4306,202 @@ function handleRegister(event) {
         }
 
         // Goals Management
-function showAddGoalModal() {
-    document.getElementById('addGoalModal').classList.add('active');
-}
+        function showAddGoalModal() {
+            document.getElementById('addGoalModal').classList.add('active');
+        }
 
-function closeAddGoalModal() {
-    document.getElementById('addGoalModal').classList.remove('active');
-    document.getElementById('goalName').value = '';
-    document.getElementById('goalDescription').value = '';
-    document.getElementById('goalCurrentAmount').value = '0';
-    document.getElementById('goalTargetAmount').value = '';
-    document.getElementById('goalTimeframe').value = '12';
-}
+        function closeAddGoalModal() {
+            document.getElementById('addGoalModal').classList.remove('active');
+            document.getElementById('goalName').value = '';
+            document.getElementById('goalDescription').value = '';
+            document.getElementById('goalCurrentAmount').value = '0';
+            document.getElementById('goalTargetAmount').value = '';
+            document.getElementById('goalTimeframe').value = '12';
+        }
 
-async function addGoal() {
-    const name = document.getElementById('goalName').value.trim();
-    const description = document.getElementById('goalDescription').value.trim();
-    const currentAmount = parseFloat(document.getElementById('goalCurrentAmount').value) || 0;
-    const targetAmount = parseFloat(document.getElementById('goalTargetAmount').value);
-    const timeframe = parseInt(document.getElementById('goalTimeframe').value);
+        async function addGoal() {
+            const name = document.getElementById('goalName').value.trim();
+            const description = document.getElementById('goalDescription').value.trim();
+            const currentAmount = parseFloat(document.getElementById('goalCurrentAmount').value) || 0;
+            const targetAmount = parseFloat(document.getElementById('goalTargetAmount').value);
+            const timeframe = parseInt(document.getElementById('goalTimeframe').value);
 
-    if (!name || !description || isNaN(targetAmount) || targetAmount <= 0 || isNaN(timeframe) || timeframe <= 0) {
-        showNotification('Preencha todos os campos obrigatórios', 'error');
-        return;
-    }
+            if (!name || !description || isNaN(targetAmount) || targetAmount <= 0 || isNaN(timeframe) || timeframe <= 0) {
+                showNotification('Preencha todos os campos obrigatórios', 'error');
+                return;
+            }
 
-    if (!currentUser) {
-        showNotification('Você precisa estar logado para criar metas', 'error');
-        return;
-    }
+            if (!currentUser) {
+                showNotification('Você precisa estar logado para criar metas', 'error');
+                return;
+            }
 
-    const userId = currentUser.uid;
+            const userId = currentUser.uid;
 
-    const newGoalData = { 
-        name: name,
-        description: description,
-        currentAmount: currentAmount,
-        targetAmount: targetAmount,
-        timeframe: timeframe,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    try {
-        const docRef = await db.collection('users').doc(userId).collection('goals').add(newGoalData);
-
-        goals.unshift({ 
-            id: docRef.id, 
-            ...newGoalData
-        });
-
-        closeAddGoalModal();
-        loadGoals();
-        
-        showNotification('Meta criada com sucesso!', 'success');
-
-    } catch (error) {
-        console.error("❌ Erro ao criar meta:", error);
-        showNotification("Erro ao criar meta: " + error.message, "error");
-    }
-}
-
-async function loadGoals() {
-    if (!currentUser) return;
-
-    const userId = currentUser.uid;
-
-    try {
-        const snapshot = await db.collection('users').doc(userId)
-            .collection('goals')
-            .orderBy('createdAt', 'desc')
-            .get();
-
-        goals = [];
-        snapshot.forEach(doc => {
-            goals.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-
-        updateGoalsList();
-    } catch (error) {
-        console.error("❌ Erro ao carregar metas:", error);
-    }
-}
-
-function updateGoalsList() {
-    const goalsList = document.getElementById('goalsList');
-    
-    if (goals.length === 0) {
-        goalsList.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-bullseye"></i>
-                <h3>Nenhuma meta definida</h3>
-                <p>Crie sua primeira meta financeira para começar</p>
-            </div>
-        `;
-    } else {
-        goalsList.innerHTML = goals.map(goal => {
-            const progress = (goal.currentAmount / goal.targetAmount) * 100;
-            const progressColor = progress >= 100 ? 'var(--success)' : progress >= 75 ? 'var(--warning)' : 'var(--primary)';
-            const monthlyTarget = (goal.targetAmount - goal.currentAmount) / goal.timeframe;
-            const monthsLeft = goal.timeframe - Math.floor((goal.currentAmount / goal.targetAmount) * goal.timeframe);
-            
-            return `
-                <div class="goal-card" onclick="editGoal('${goal.id}')">
-                    <div class="goal-header">
-                        <div>
-                            <div class="goal-title">${goal.name}</div>
-                            <div class="goal-description">${goal.description}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="goal-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${Math.min(progress, 100)}%; background: ${progressColor};"></div>
-                        </div>
-                        <div class="progress-info">
-                            <span>${progress.toFixed(1)}% concluído</span>
-                            <span>${monthsLeft} meses restantes</span>
-                        </div>
-                    </div>
-                    
-                    <div class="goal-monthly">
-                        <div class="goal-monthly-label">Valor mensal necessário:</div>
-                        <div class="goal-monthly-value">R$ ${monthlyTarget.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
-                    </div>
-                    
-                    <div class="goal-amount">R$ ${goal.currentAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
-                    <div class="goal-target">Meta: R$ ${goal.targetAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
-                </div>
-            `;
-        }).join('');
-    }
-}
-
-// 🔥 FUNÇÃO EDITGOAL CORRIGIDA - ADICIONE ESTA FUNÇÃO NOVA
-function editGoal(goalId) {
-    console.log("Editando meta:", goalId);
-    const goal = goals.find(g => g.id === goalId);
-    if (!goal) {
-        console.error("Meta não encontrada:", goalId);
-        showNotification('Meta não encontrada', 'error');
-        return;
-    }
-
-    // Preencher o modal com os dados da meta
-    document.getElementById('editGoalId').value = goal.id;
-    document.getElementById('editGoalName').value = goal.name;
-    document.getElementById('editGoalDescription').value = goal.description || '';
-    document.getElementById('editGoalCurrentAmount').value = goal.currentAmount || 0;
-    document.getElementById('editGoalTargetAmount').value = goal.targetAmount;
-    document.getElementById('editGoalTimeframe').value = goal.timeframe || 12;
-
-    // Mostrar o modal
-    document.getElementById('editGoalModal').classList.add('active');
-}
-
-function closeEditGoalModal() {
-    document.getElementById('editGoalModal').classList.remove('active');
-}
-
-async function updateGoal() {
-    const goalId = document.getElementById('editGoalId').value;
-    const name = document.getElementById('editGoalName').value.trim();
-    const description = document.getElementById('editGoalDescription').value.trim();
-    const currentAmount = parseFloat(document.getElementById('editGoalCurrentAmount').value) || 0;
-    const targetAmount = parseFloat(document.getElementById('editGoalTargetAmount').value);
-    const timeframe = parseInt(document.getElementById('editGoalTimeframe').value);
-
-    if (!name || !description || isNaN(targetAmount) || targetAmount <= 0 || isNaN(timeframe) || timeframe <= 0) {
-        showNotification('Preencha todos os campos obrigatórios', 'error');
-        return;
-    }
-
-    try {
-        await db.collection('users').doc(currentUser.uid)
-            .collection('goals')
-            .doc(goalId)
-            .update({
+            const newGoalData = { 
                 name: name,
                 description: description,
                 currentAmount: currentAmount,
                 targetAmount: targetAmount,
                 timeframe: timeframe,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            };
 
-        closeEditGoalModal();
-        loadGoals();
-        showNotification('Meta atualizada com sucesso!', 'success');
-    } catch (error) {
-        console.error("❌ Erro ao atualizar meta:", error);
-        showNotification("Erro ao atualizar: " + error.message, "error");
-    }
-}
+            try {
+                const docRef = await db.collection('users').doc(userId).collection('goals').add(newGoalData);
+
+                goals.unshift({ 
+                    id: docRef.id, 
+                    ...newGoalData
+                });
+
+                closeAddGoalModal();
+                loadGoals();
+                
+                showNotification('Meta criada com sucesso!', 'success');
+
+            } catch (error) {
+                console.error("❌ Erro ao criar meta:", error);
+                showNotification("Erro ao criar meta: " + error.message, "error");
+            }
+        }
+
+        async function loadGoals() {
+            if (!currentUser) return;
+
+            const userId = currentUser.uid;
+
+            try {
+                const snapshot = await db.collection('users').doc(userId)
+                    .collection('goals')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                goals = [];
+                snapshot.forEach(doc => {
+                    goals.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                updateGoalsList();
+            } catch (error) {
+                console.error("❌ Erro ao carregar metas:", error);
+            }
+        }
+
+        function updateGoalsList() {
+            const goalsList = document.getElementById('goalsList');
+            
+            if (goals.length === 0) {
+                goalsList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bullseye"></i>
+                        <h3>Nenhuma meta definida</h3>
+                        <p>Crie sua primeira meta financeira para começar</p>
+                    </div>
+                `;
+            } else {
+                goalsList.innerHTML = goals.map(goal => {
+                    const progress = (goal.currentAmount / goal.targetAmount) * 100;
+                    const progressColor = progress >= 100 ? 'var(--success)' : progress >= 75 ? 'var(--warning)' : 'var(--primary)';
+                    const monthlyTarget = (goal.targetAmount - goal.currentAmount) / goal.timeframe;
+                    const monthsLeft = goal.timeframe - Math.floor((goal.currentAmount / goal.targetAmount) * goal.timeframe);
+                    
+                    return `
+                        <div class="goal-card" onclick="editGoal('${goal.id}')">
+                            <div class="goal-header">
+                                <div>
+                                    <div class="goal-title">${goal.name}</div>
+                                    <div class="goal-description">${goal.description}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="goal-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${Math.min(progress, 100)}%; background: ${progressColor};"></div>
+                                </div>
+                                <div class="progress-info">
+                                    <span>${progress.toFixed(1)}% concluído</span>
+                                    <span>${monthsLeft} meses restantes</span>
+                                </div>
+                            </div>
+                            
+                            <div class="goal-monthly">
+                                <div class="goal-monthly-label">Valor mensal necessário:</div>
+                                <div class="goal-monthly-value">R$ ${monthlyTarget.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                            </div>
+                            
+                            <div class="goal-amount">R$ ${goal.currentAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                            <div class="goal-target">Meta: R$ ${goal.targetAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 🔥 FUNÇÃO EDITGOAL CORRIGIDA - ADICIONE ESTA FUNÇÃO NOVA
+        function editGoal(goalId) {
+            console.log("Editando meta:", goalId);
+            const goal = goals.find(g => g.id === goalId);
+            if (!goal) {
+                console.error("Meta não encontrada:", goalId);
+                showNotification('Meta não encontrada', 'error');
+                return;
+            }
+
+            // Preencher o modal com os dados da meta
+            document.getElementById('editGoalId').value = goal.id;
+            document.getElementById('editGoalName').value = goal.name;
+            document.getElementById('editGoalDescription').value = goal.description || '';
+            document.getElementById('editGoalCurrentAmount').value = goal.currentAmount || 0;
+            document.getElementById('editGoalTargetAmount').value = goal.targetAmount;
+            document.getElementById('editGoalTimeframe').value = goal.timeframe || 12;
+
+            // Mostrar o modal
+            document.getElementById('editGoalModal').classList.add('active');
+        }
+
+        function closeEditGoalModal() {
+            document.getElementById('editGoalModal').classList.remove('active');
+        }
+
+        async function updateGoal() {
+            const goalId = document.getElementById('editGoalId').value;
+            const name = document.getElementById('editGoalName').value.trim();
+            const description = document.getElementById('editGoalDescription').value.trim();
+            const currentAmount = parseFloat(document.getElementById('editGoalCurrentAmount').value) || 0;
+            const targetAmount = parseFloat(document.getElementById('editGoalTargetAmount').value);
+            const timeframe = parseInt(document.getElementById('editGoalTimeframe').value);
+
+            if (!name || !description || isNaN(targetAmount) || targetAmount <= 0 || isNaN(timeframe) || timeframe <= 0) {
+                showNotification('Preencha todos os campos obrigatórios', 'error');
+                return;
+            }
+
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('goals')
+                    .doc(goalId)
+                    .update({
+                        name: name,
+                        description: description,
+                        currentAmount: currentAmount,
+                        targetAmount: targetAmount,
+                        timeframe: timeframe,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                closeEditGoalModal();
+                loadGoals();
+                showNotification('Meta atualizada com sucesso!', 'success');
+            } catch (error) {
+                console.error("❌ Erro ao atualizar meta:", error);
+                showNotification("Erro ao atualizar: " + error.message, "error");
+            }
+        }
 
         // Market Indicators - MELHORADO
         async function loadMarketIndicators() {
@@ -4646,7 +4729,7 @@ async function updateGoal() {
                 };
                 return typeLabels[inv.type] || 'Investimento';
             });
-            const data = investments.map(inv => inv.finalAmount || 0);
+            const data = investments.map(inv => inv.currentAmount || inv.finalAmount || 0);
             const backgroundColors = investments.map(inv => {
                 const typeColors = {
                     'compound-interest': '#0066FF',
@@ -4736,102 +4819,67 @@ async function updateGoal() {
         }
 
         // 🔥 MODAL PARA ADICIONAR INVESTIMENTO - FUNÇÃO CORRIGIDA
-function showAddInvestmentModal() {
-    // Criar modal dinâmico se não existir
-    let modal = document.getElementById('addInvestmentModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'addInvestmentModal';
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Novo Investimento</h3>
-                    <button class="modal-close" onclick="closeAddInvestmentModal()">&times;</button>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Tipo de Investimento</label>
-                    <select class="form-input" id="investmentType">
-                        <option value="compound-interest">Juros Compostos</option>
-                        <option value="stock">Ações</option>
-                        <option value="fixed-income">Renda Fixa</option>
-                        <option value="funds">Fundos</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nome do Investimento</label>
-                    <input type="text" class="form-input" id="investmentName" placeholder="Ex: CDB, Tesouro Direto, Ações...">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Valor Investido (R$)</label>
-                        <input type="number" class="form-input" id="investmentAmount" value="1000" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Taxa Anual (%)</label>
-                        <input type="number" class="form-input" id="investmentRate" value="8" step="0.1" min="0">
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button class="btn btn-outline" onclick="closeAddInvestmentModal()">Cancelar</button>
-                    <button class="btn btn-success" onclick="addInvestment()">
-                        <i class="fas fa-plus"></i> Adicionar Investimento
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-    modal.classList.add('active');
-}
+        function showAddInvestmentModal() {
+            document.getElementById('addInvestmentModal').classList.add('active');
+        }
 
-function closeAddInvestmentModal() {
-    const modal = document.getElementById('addInvestmentModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-}
+        function closeAddInvestmentModal() {
+            document.getElementById('addInvestmentModal').classList.remove('active');
+        }
 
-// 🔥 ADICIONAR INVESTIMENTO MANUAL
-async function addInvestment() {
-    if (!currentUser) {
-        showNotification('Você precisa estar logado', 'error');
-        return;
-    }
+        // 🔥 ADICIONAR INVESTIMENTO MANUAL
+        async function addInvestment() {
+            if (!currentUser) {
+                showNotification('Você precisa estar logado', 'error');
+                return;
+            }
 
-    const type = document.getElementById('investmentType').value;
-    const name = document.getElementById('investmentName').value.trim();
-    const amount = parseFloat(document.getElementById('investmentAmount').value) || 0;
-    const rate = parseFloat(document.getElementById('investmentRate').value) || 0;
+            const type = document.getElementById('investmentType').value;
+            const name = document.getElementById('investmentName').value.trim();
+            const amount = parseFloat(document.getElementById('investmentAmount').value) || 0;
+            const rate = parseFloat(document.getElementById('investmentRate').value) || 0;
 
-    if (!name || amount <= 0) {
-        showNotification('Preencha todos os campos corretamente', 'error');
-        return;
-    }
+            if (!name || amount <= 0) {
+                showNotification('Preencha todos os campos corretamente', 'error');
+                return;
+            }
 
-    const investmentData = {
-        type: type,
-        name: name,
-        initialAmount: amount,
-        currentAmount: amount,
-        annualRate: rate,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
+            const investmentData = {
+                type: type,
+                name: name,
+                initialAmount: amount,
+                currentAmount: amount,
+                annualRate: rate,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-    try {
-        await db.collection('users').doc(currentUser.uid)
-            .collection('investments')
-            .add(investmentData);
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('investments')
+                    .add(investmentData);
 
-        closeAddInvestmentModal();
-        loadInvestments();
-        showNotification('Investimento adicionado com sucesso!', 'success');
-    } catch (error) {
-        console.error("❌ Erro ao adicionar investimento:", error);
-        showNotification("Erro ao adicionar: " + error.message, "error");
-    }
-}
+                closeAddInvestmentModal();
+                loadInvestments();
+                showNotification('Investimento adicionado com sucesso!', 'success');
+            } catch (error) {
+                console.error("❌ Erro ao adicionar investimento:", error);
+                showNotification("Erro ao adicionar: " + error.message, "error");
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLoggedInUser();
+            
+            // Set default dates for custom report
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            
+            document.getElementById('reportStartDate').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('reportEndDate').value = lastDay.toISOString().split('T')[0];
+        });
     </script>
 </body>
 </html>
