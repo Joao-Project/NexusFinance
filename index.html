@@ -1123,6 +1123,7 @@
         }
 
         /* Goals */
+               /* 🔥 ESTILOS MELHORADOS PARA METAS */
         .goals-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -1138,11 +1139,24 @@
             border: 1px solid var(--glass-border);
             transition: all 0.3s ease;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
 
         .goal-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary);
+        }
+
+        .goal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--success));
         }
 
         .goal-header {
@@ -1153,15 +1167,27 @@
         }
 
         .goal-title {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 5px;
+            color: var(--light);
         }
 
         .goal-description {
             font-size: 0.85rem;
             color: var(--gray);
             margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .goal-progress-percent {
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+            min-width: 60px;
+            text-align: center;
         }
 
         .goal-progress {
@@ -1170,18 +1196,18 @@
 
         .progress-bar {
             width: 100%;
-            height: 8px;
+            height: 10px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+            border-radius: 5px;
             overflow: hidden;
             margin-bottom: 8px;
         }
 
         .progress-fill {
             height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
             background: linear-gradient(90deg, var(--primary), var(--success));
-            border-radius: 4px;
-            transition: width 0.3s ease;
         }
 
         .progress-info {
@@ -1191,22 +1217,11 @@
             color: var(--gray);
         }
 
-        .goal-amount {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .goal-target {
-            font-size: 0.85rem;
-            color: var(--gray);
-        }
-
         .goal-monthly {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
-            padding: 10px 15px;
-            margin: 10px 0;
+            padding: 12px 15px;
+            margin: 15px 0;
             border-left: 3px solid var(--warning);
         }
 
@@ -1226,8 +1241,21 @@
             display: flex;
             gap: 8px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
+        /* Estado de meta concluída */
+        .goal-card.completed {
+            border-color: var(--success);
+        }
+
+        .goal-card.completed::before {
+            background: var(--success);
+        }
+
+        .goal-card.completed .progress-fill {
+            background: var(--success);
+        }
         /* Portfolio Design */
         .portfolio-section {
             background: var(--card-bg);
@@ -2983,21 +3011,21 @@
             }
         }
 
-        async function deleteGoalConfirmed(goalId) {
-            try {
-                await db.collection('users').doc(currentUser.uid)
-                    .collection('goals')
-                    .doc(goalId)
-                    .delete();
+       async function deleteGoalConfirmed(goalId) {
+    try {
+        await db.collection('users').doc(currentUser.uid)
+            .collection('goals')
+            .doc(goalId)
+            .delete();
 
-                closeConfirmModal();
-                loadGoals();
-                showNotification('Meta excluída com sucesso!', 'success');
-            } catch (error) {
-                console.error("❌ Erro ao excluir meta:", error);
-                showNotification("Erro ao excluir: " + error.message, "error");
-            }
-        }
+        closeConfirmModal();
+        loadGoals();
+        showNotification('Meta excluída com sucesso!', 'success');
+    } catch (error) {
+        console.error("❌ Erro ao excluir meta:", error);
+        showNotification("Erro ao excluir meta: " + error.message, "error");
+    }
+}
 
         async function deleteTransactionConfirmed(transactionId) {
             try {
@@ -3065,16 +3093,16 @@
             document.getElementById('pageTitle').textContent = titles[tabName] || 'Dashboard Financeiro';
 
             // 🔥 CORREÇÃO: Comportamento específico para cada aba
-            if (tabName === 'transactions') {
-                loadTransactions();
-            } else if (tabName === 'goals') {
-                loadGoals();
-            } else if (tabName === 'investments') {
-                // 🔥 CORREÇÃO: Não mostrar simulador automaticamente
-                hideAllSimulators();
-                showMarketIndicators(); // Mostrar indicadores por padrão
-                loadInvestments();
-            }
+             if (tabName === 'transactions') {
+        loadTransactions();
+    } else if (tabName === 'goals') {
+        loadGoals(); // 🔥 AGORA VAI CARREGAR AS METAS!
+    } else if (tabName === 'investments') {
+        hideAllSimulators();
+        showMarketIndicators();
+        loadInvestments();
+    }
+}
 
             // 🔥 REMOVIDO: Não mostrar popup automático ao mudar de aba
         }
@@ -4247,90 +4275,117 @@ function confirmDeleteGoalFromModal() {
 
         // Goals Management
         function showAddGoalModal() {
-            document.getElementById('addGoalModal').classList.add('active');
-        }
+    console.log("📝 Abrindo modal de nova meta");
+    document.getElementById('addGoalModal').classList.add('active');
+}
 
-        function closeAddGoalModal() {
-            document.getElementById('addGoalModal').classList.remove('active');
-            document.getElementById('goalName').value = '';
-            document.getElementById('goalDescription').value = '';
-            document.getElementById('goalCurrentAmount').value = '0';
-            document.getElementById('goalTargetAmount').value = '';
-            document.getElementById('goalTimeframe').value = '12';
-        }
+function closeAddGoalModal() {
+    document.getElementById('addGoalModal').classList.remove('active');
+    // Limpar os campos
+    document.getElementById('goalName').value = '';
+    document.getElementById('goalDescription').value = '';
+    document.getElementById('goalCurrentAmount').value = '0';
+    document.getElementById('goalTargetAmount').value = '';
+    document.getElementById('goalTimeframe').value = '12';
+}
 
-        async function addGoal() {
-            const name = document.getElementById('goalName').value.trim();
-            const description = document.getElementById('goalDescription').value.trim();
-            const currentAmount = parseFloat(document.getElementById('goalCurrentAmount').value) || 0;
-            const targetAmount = parseFloat(document.getElementById('goalTargetAmount').value);
-            const timeframe = parseInt(document.getElementById('goalTimeframe').value);
+// 🔥 CORREÇÃO: Função para adicionar meta
+async function addGoal() {
+    const name = document.getElementById('goalName').value.trim();
+    const description = document.getElementById('goalDescription').value.trim();
+    const currentAmount = parseFloat(document.getElementById('goalCurrentAmount').value.replace(',', '.')) || 0;
+    const targetAmount = parseFloat(document.getElementById('goalTargetAmount').value.replace(',', '.'));
+    const timeframe = parseInt(document.getElementById('goalTimeframe').value);
 
-            if (!name || !description || isNaN(targetAmount) || targetAmount <= 0 || isNaN(timeframe) || timeframe <= 0) {
-                showNotification('Preencha todos os campos obrigatórios', 'error');
-                return;
-            }
+    console.log("📋 Dados da meta:", { name, description, currentAmount, targetAmount, timeframe });
 
-            if (!currentUser) {
-                showNotification('Você precisa estar logado para criar metas', 'error');
-                return;
-            }
+    // Validações
+    if (!name) {
+        showNotification('Digite o nome da meta', 'error');
+        return;
+    }
+    
+    if (isNaN(targetAmount) || targetAmount <= 0) {
+        showNotification('Valor da meta deve ser maior que zero', 'error');
+        return;
+    }
+    
+    if (currentAmount > targetAmount) {
+        showNotification('Valor atual não pode ser maior que a meta', 'error');
+        return;
+    }
+    
+    if (isNaN(timeframe) || timeframe <= 0 || timeframe > 120) {
+        showNotification('Tempo deve ser entre 1 e 120 meses', 'error');
+        return;
+    }
 
-            const userId = currentUser.uid;
+    if (!currentUser) {
+        showNotification('Você precisa estar logado para criar metas', 'error');
+        return;
+    }
 
-            const newGoalData = { 
-                name: name,
-                description: description,
-                currentAmount: currentAmount,
-                targetAmount: targetAmount,
-                timeframe: timeframe,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
+    const userId = currentUser.uid;
 
-            try {
-                const docRef = await db.collection('users').doc(userId).collection('goals').add(newGoalData);
+    const newGoalData = { 
+        name: name,
+        description: description,
+        currentAmount: currentAmount,
+        targetAmount: targetAmount,
+        timeframe: timeframe,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-                goals.unshift({ 
-                    id: docRef.id, 
-                    ...newGoalData
-                });
+    try {
+        const docRef = await db.collection('users').doc(userId).collection('goals').add(newGoalData);
 
-                closeAddGoalModal();
-                loadGoals();
-                
-                showNotification('Meta criada com sucesso!', 'success');
+        console.log("✅ Meta criada com ID:", docRef.id);
+        
+        closeAddGoalModal();
+        loadGoals(); // Recarregar a lista
+        
+        showNotification('Meta criada com sucesso! 🎯', 'success');
 
-            } catch (error) {
-                console.error("❌ Erro ao criar meta:", error);
-                showNotification("Erro ao criar meta: " + error.message, "error");
-            }
-        }
+    } catch (error) {
+        console.error("❌ Erro ao criar meta:", error);
+        showNotification("Erro ao criar meta: " + error.message, "error");
+    }
 
         async function loadGoals() {
-            if (!currentUser) return;
+    if (!currentUser) return;
 
-            const userId = currentUser.uid;
+    const userId = currentUser.uid;
 
-            try {
-                const snapshot = await db.collection('users').doc(userId)
-                    .collection('goals')
-                    .orderBy('createdAt', 'desc')
-                    .get();
+    try {
+        console.log("📥 Carregando metas do usuário:", userId);
+        
+        const snapshot = await db.collection('users').doc(userId)
+            .collection('goals')
+            .orderBy('createdAt', 'desc')
+            .get();
 
-                goals = [];
-                snapshot.forEach(doc => {
-                    goals.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
+        goals = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            goals.push({
+                id: doc.id,
+                ...data,
+                // Garantir que os valores numéricos existam
+                currentAmount: data.currentAmount || 0,
+                targetAmount: data.targetAmount || 0,
+                timeframe: data.timeframe || 12
+            });
+        });
 
-                updateGoalsList();
-            } catch (error) {
-                console.error("❌ Erro ao carregar metas:", error);
-            }
-        }
+        console.log(`✅ ${goals.length} metas carregadas`);
+        updateGoalsList();
+        
+    } catch (error) {
+        console.error("❌ Erro ao carregar metas:", error);
+        showNotification("Erro ao carregar metas", "error");
+    }
+}
 
         // 🔥 CORREÇÃO: Exclusão direta de meta
 async function deleteGoal(goalId) {
@@ -4361,29 +4416,46 @@ async function deleteGoal(goalId) {
         function updateGoalsList() {
     const goalsList = document.getElementById('goalsList');
     
+    if (!goalsList) {
+        console.error("❌ Elemento goalsList não encontrado");
+        return;
+    }
+
     if (goals.length === 0) {
         goalsList.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-bullseye"></i>
                 <h3>Nenhuma meta definida</h3>
                 <p>Crie sua primeira meta financeira para começar</p>
+                <button class="btn" onclick="showAddGoalModal()" style="margin-top: 15px;">
+                    <i class="fas fa-plus"></i> Criar Primeira Meta
+                </button>
             </div>
         `;
     } else {
         goalsList.innerHTML = goals.map(goal => {
-            const progress = (goal.currentAmount / goal.targetAmount) * 100;
-            const progressColor = progress >= 100 ? 'var(--success)' : progress >= 75 ? 'var(--warning)' : 'var(--primary)';
-            const monthlyTarget = (goal.targetAmount - goal.currentAmount) / goal.timeframe;
-            const monthsLeft = goal.timeframe - Math.floor((goal.currentAmount / goal.targetAmount) * goal.timeframe);
+            const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
+            const progressColor = progress >= 100 ? 'var(--success)' : 
+                                progress >= 75 ? 'var(--warning)' : 'var(--primary)';
+            const monthlyTarget = goal.targetAmount > goal.currentAmount ? 
+                                (goal.targetAmount - goal.currentAmount) / goal.timeframe : 0;
+            const monthsLeft = Math.max(0, goal.timeframe - Math.floor((goal.currentAmount / goal.targetAmount) * goal.timeframe));
+            
+            // Formatar valores monetários
+            const currentAmountFormatted = goal.currentAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            const targetAmountFormatted = goal.targetAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            const monthlyTargetFormatted = monthlyTarget.toLocaleString('pt-BR', {minimumFractionDigits: 2});
             
             return `
-                <div class="goal-card" onclick="editGoal('${goal.id}')">
+                <div class="goal-card">
                     <div class="goal-header">
                         <div>
                             <div class="goal-title">${goal.name}</div>
                             <div class="goal-description">${goal.description || 'Sem descrição'}</div>
                         </div>
-                        <div class="goal-progress-percent">${progress.toFixed(1)}%</div>
+                        <div class="goal-progress-percent" style="color: ${progressColor}">
+                            ${progress.toFixed(1)}%
+                        </div>
                     </div>
                     
                     <div class="goal-progress">
@@ -4391,23 +4463,26 @@ async function deleteGoal(goalId) {
                             <div class="progress-fill" style="width: ${Math.min(progress, 100)}%; background: ${progressColor};"></div>
                         </div>
                         <div class="progress-info">
-                            <span>R$ ${goal.currentAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})} de R$ ${goal.targetAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                            <span>R$ ${currentAmountFormatted} de R$ ${targetAmountFormatted}</span>
                             <span>${monthsLeft} meses restantes</span>
                         </div>
                     </div>
                     
                     ${monthlyTarget > 0 ? `
                     <div class="goal-monthly">
-                        <div class="goal-monthly-label">Valor mensal necessário:</div>
-                        <div class="goal-monthly-value">R$ ${monthlyTarget.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        <div class="goal-monthly-label">Valor mensal necessário para atingir a meta:</div>
+                        <div class="goal-monthly-value">R$ ${monthlyTargetFormatted}/mês</div>
                     </div>
                     ` : ''}
                     
                     <div class="goal-actions">
-                        <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); editGoal('${goal.id}')">
+                        <button class="btn btn-success btn-sm" onclick="addAmountToGoal('${goal.id}')">
+                            <i class="fas fa-plus"></i> Adicionar Valor
+                        </button>
+                        <button class="btn btn-warning btn-sm" onclick="editGoal('${goal.id}')">
                             <i class="fas fa-edit"></i> Editar
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteGoal('${goal.id}')">
+                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteGoal('${goal.id}', '${goal.name}')">
                             <i class="fas fa-trash"></i> Excluir
                         </button>
                     </div>
@@ -4417,11 +4492,46 @@ async function deleteGoal(goalId) {
     }
 }
 
+async function addAmountToGoal(goalId) {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+
+    const amount = prompt(`Quanto você quer adicionar à meta "${goal.name}"?\n\nValor atual: R$ ${goal.currentAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}\nValor da meta: R$ ${goal.targetAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, "0");
+
+    if (amount === null) return; // Usuário cancelou
+
+    const addAmount = parseFloat(amount.replace(',', '.'));
+    
+    if (isNaN(addAmount) || addAmount <= 0) {
+        showNotification('Digite um valor válido maior que zero', 'error');
+        return;
+    }
+
+    const newCurrentAmount = goal.currentAmount + addAmount;
+
+    try {
+        await db.collection('users').doc(currentUser.uid)
+            .collection('goals')
+            .doc(goalId)
+            .update({
+                currentAmount: newCurrentAmount,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+        showNotification(`R$ ${addAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})} adicionado à meta "${goal.name}"!`, 'success');
+        loadGoals(); // Recarregar a lista
+        
+    } catch (error) {
+        console.error("❌ Erro ao adicionar valor à meta:", error);
+        showNotification("Erro ao adicionar valor: " + error.message, "error");
+    }
+}
+
+
         // 🔥 CORREÇÃO COMPLETA: Sistema de Metas
 function editGoal(goalId) {
     console.log("📝 Editando meta:", goalId);
     
-    // Encontrar a meta pelo ID
     const goal = goals.find(g => g.id === goalId);
     if (!goal) {
         console.error("❌ Meta não encontrada:", goalId);
@@ -4452,8 +4562,8 @@ async function updateGoal() {
     const goalId = document.getElementById('editGoalId').value;
     const name = document.getElementById('editGoalName').value.trim();
     const description = document.getElementById('editGoalDescription').value.trim();
-    const currentAmount = parseFloat(document.getElementById('editGoalCurrentAmount').value) || 0;
-    const targetAmount = parseFloat(document.getElementById('editGoalTargetAmount').value);
+    const currentAmount = parseFloat(document.getElementById('editGoalCurrentAmount').value.replace(',', '.')) || 0;
+    const targetAmount = parseFloat(document.getElementById('editGoalTargetAmount').value.replace(',', '.'));
     const timeframe = parseInt(document.getElementById('editGoalTimeframe').value);
 
     console.log("🔄 Atualizando meta:", { goalId, name, currentAmount, targetAmount, timeframe });
@@ -4469,8 +4579,13 @@ async function updateGoal() {
         return;
     }
     
-    if (isNaN(timeframe) || timeframe <= 0) {
-        showNotification('Tempo deve ser maior que zero', 'error');
+    if (currentAmount > targetAmount) {
+        showNotification('Valor atual não pode ser maior que a meta', 'error');
+        return;
+    }
+    
+    if (isNaN(timeframe) || timeframe <= 0 || timeframe > 120) {
+        showNotification('Tempo deve ser entre 1 e 120 meses', 'error');
         return;
     }
 
@@ -4494,13 +4609,14 @@ async function updateGoal() {
 
         closeEditGoalModal();
         loadGoals(); // Recarregar a lista
-        showNotification('Meta atualizada com sucesso!', 'success');
+        showNotification('Meta atualizada com sucesso! ✅', 'success');
         
     } catch (error) {
         console.error("❌ Erro ao atualizar meta:", error);
         showNotification("Erro ao atualizar meta: " + error.message, "error");
     }
 }
+
 
         // Market Indicators - MELHORADO
         async function loadMarketIndicators() {
