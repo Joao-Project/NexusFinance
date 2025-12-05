@@ -2563,11 +2563,13 @@
                         <div class="form-group">
                             <label class="form-label">Categoria</label>
                             <select class="form-input" id="revenueCategory">
-                                <option value="salario">Salário</option>
-                                <option value="freelance">Freelance</option>
-                                <option value="investimentos">Investimentos</option>
-                                <option value="outros">Outros</option>
-                            </select>
+    <!-- Opções padrão -->
+    <option value="salario">Salário</option>
+    <option value="freelance">Freelance</option>
+    <option value="investimentos">Investimentos</option>
+    <option value="outros">Outros</option>
+    <!-- Categorias personalizadas serão adicionadas aqui -->
+</select>
                         </div>
                         
                         <div class="form-actions">
@@ -3612,27 +3614,30 @@
         }
 
         function executeConfirmedAction() {
-            if (!pendingConfirmation) return;
-            
-            const { action, data } = pendingConfirmation;
-            
-            switch(action) {
-                case 'logout':
-                    handleLogout();
-                    break;
-                case 'deleteTransaction':
-                    deleteTransaction();
-                    break;
-                case 'deleteGoal':
-                    deleteGoal();
-                    break;
-                case 'deleteInvestment':
-                    deleteInvestment();
-                    break;
-            }
-            
-            closeConfirmationModal();
-        }
+    if (!pendingConfirmation) return;
+    
+    const { action, data } = pendingConfirmation;
+    
+    switch(action) {
+        case 'logout':
+            handleLogout();
+            break;
+        case 'deleteTransaction':
+            // Passar o ID da transação
+            deleteTransaction(data);
+            break;
+        case 'deleteGoal':
+            // Passar o ID da meta
+            deleteGoal(data);
+            break;
+        case 'deleteInvestment':
+            // Passar o ID do investimento
+            deleteInvestment(data);
+            break;
+    }
+    
+    closeConfirmationModal();
+}
 
         // ===== INICIALIZAÇÃO DO FIREBASE =====
         function initializeFirebase() {
@@ -4491,9 +4496,9 @@
         }
 
         async function loadGoals() {
-            if (!currentUser) return;
-
-            const userId = currentUser.uid;
+            if (currentUser) {
+        cache.remove(`goals_${currentUser.uid}`);
+    }
 
             // Mostrar skeleton loading
             const goalsList = document.getElementById('goalsList');
@@ -4571,6 +4576,8 @@
                     const remainingAmount = goal.targetAmount - goal.currentAmount;
                     const monthlyAmount = goal.monthlyAmount || (remainingAmount / goal.timeframe);
                     const isCompleted = goal.currentAmount >= goal.targetAmount;
+                    const progress = (goal.currentAmount / goal.targetAmount) * 100;
+                    const progressPercent = Math.min(progress, 100);
                     
                     return `
                         <div class="goal-card" onclick="openEditGoalModal('${goal.id}')">
@@ -4594,17 +4601,24 @@
                                 </div>
                             </div>
                             
-                            ${!isCompleted ? `
-                            <div class="goal-monthly">
-                                <div class="goal-monthly-label">Valor mensal necessário</div>
-                                <div class="goal-monthly-value">R$ ${monthlyAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
-                            </div>
-                            ` : `
-                            <div class="goal-monthly" style="border-left-color: var(--success);">
-                                <div class="goal-monthly-label">Meta concluída!</div>
-                                <div class="goal-monthly-value" style="color: var(--success);">Parabéns! 🎉</div>
-                            </div>
-                            `}
+                                           ${!isCompleted ? `
+                <div class="goal-monthly">
+                    <div class="goal-monthly-label">Valor mensal necessário: R$ ${monthlyAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                    <div class="goal-monthly-value">
+                        <button class="btn btn-success btn-sm" onclick="event.stopPropagation(); addProgressToGoal('${goal.id}', ${monthlyAmount})">
+                            <i class="fas fa-plus"></i> Adicionar ${monthlyAmount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); addProgressToGoal('${goal.id}')" style="margin-left: 8px;">
+                            <i class="fas fa-edit"></i> Outro valor
+                        </button>
+                    </div>
+                </div>
+                ` : `
+                <div class="goal-monthly" style="border-left-color: var(--success);">
+                    <div class="goal-monthly-label">Meta concluída!</div>
+                    <div class="goal-monthly-value" style="color: var(--success);">Parabéns! 🎉</div>
+                </div>
+                `}
                             
                             <div class="goal-actions">
                                 <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); openEditGoalModal('${goal.id}')">
@@ -4703,37 +4717,39 @@
             }
         }
 
-        async function addProgressToGoal(goalId) {
-            const goal = goals.find(g => g.id === goalId);
-            if (!goal) return;
+       async function addProgressToGoal(goalId, suggestedAmount = 0) {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
 
-            const amountToAdd = parseFloat(prompt(`Quanto deseja adicionar à meta "${goal.name}"?`, "0"));
-            
-            if (isNaN(amountToAdd) || amountToAdd <= 0) {
-                showNotification('Valor inválido', 'warning');
-                return;
-            }
+    const amountToAdd = suggestedAmount > 0 
+        ? suggestedAmount 
+        : parseFloat(prompt(`Quanto deseja adicionar à meta "${goal.name}"?`, suggestedAmount.toString()));
+    
+    if (isNaN(amountToAdd) || amountToAdd <= 0) {
+        showNotification('Valor inválido', 'warning');
+        return;
+    }
 
-            const newAmount = goal.currentAmount + amountToAdd;
-            const userId = currentUser.uid;
+    const newAmount = goal.currentAmount + amountToAdd;
+    const userId = currentUser.uid;
 
-            try {
-                await db.collection('users').doc(userId).collection('goals').doc(goalId).update({
-                    currentAmount: newAmount,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+    try {
+        await db.collection('users').doc(userId).collection('goals').doc(goalId).update({
+            currentAmount: newAmount,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-                // Invalidar cache
-                cache.remove(`goals_${userId}`);
+        // Invalidar cache
+        cache.remove(`goals_${userId}`);
 
-                loadGoals();
-                showNotification(`R$ ${amountToAdd.toLocaleString('pt-BR', {minimumFractionDigits: 2})} adicionado à meta!`, 'success');
-                
-            } catch (error) {
-                console.error("❌ Erro ao adicionar progresso:", error);
-                showNotification("Erro ao adicionar progresso: " + error.message, "error");
-            }
-        }
+        loadGoals();
+        showNotification(`R$ ${amountToAdd.toLocaleString('pt-BR', {minimumFractionDigits: 2})} adicionado à meta "${goal.name}"!`, 'success');
+        
+    } catch (error) {
+        console.error("❌ Erro ao adicionar progresso:", error);
+        showNotification("Erro ao adicionar progresso: " + error.message, "error");
+    }
+}
 
         // ===== FUNÇÕES DE INVESTIMENTOS - CORRIGIDAS =====
         function showSimulator(simulatorType) {
@@ -5175,23 +5191,30 @@
             }
         }
 
-        async function deleteInvestment() {
-            const investmentId = document.getElementById('editInvestmentId').value;
-            const userId = currentUser.uid;
+       async function deleteInvestment(investmentId = null) {
+    // Se não veio por parâmetro, pega do input
+    const id = investmentId || document.getElementById('editInvestmentId').value;
+    if (!id) {
+        showNotification('ID do investimento não encontrado', 'error');
+        return;
+    }
+    
+    const userId = currentUser.uid;
 
-            try {
-                await db.collection('users').doc(userId).collection('investments').doc(investmentId).delete();
-                
-                // Invalidar cache
-                cache.remove(`investments_${userId}`);
-                
-                loadInvestments();
-                showNotification('Investimento excluído com sucesso!', 'success');
-            } catch (error) {
-                console.error("❌ Erro ao excluir investimento:", error);
-                showNotification("Erro ao excluir investimento: " + error.message, "error");
-            }
-        }
+    try {
+        await db.collection('users').doc(userId).collection('investments').doc(id).delete();
+        
+        // Invalidar cache
+        cache.remove(`investments_${userId}`);
+        
+        closeEditInvestmentModal();
+        loadInvestments();
+        showNotification('Investimento excluído com sucesso!', 'success');
+    } catch (error) {
+        console.error("❌ Erro ao excluir investimento:", error);
+        showNotification("Erro ao excluir investimento: " + error.message, "error");
+    }
+}
 
         function refreshPortfolio() {
             // Invalidar cache
@@ -5537,8 +5560,56 @@
             } catch (error) {
                 console.error("❌ Erro ao carregar categorias:", error);
                 createSampleCategories();
+                loadCategoriesIntoSelects();
             }
         }
+
+    // ADICIONE ESTE CÓDIGO DEPOIS DA FUNÇÃO loadCategories()
+
+function loadCategoriesIntoSelects() {
+    if (!currentUser || categories.length === 0) return;
+    
+    // Para receitas
+    const revenueSelect = document.getElementById('revenueCategory');
+    // Para despesas essenciais
+    const essentialSelect = document.getElementById('essentialCategory');
+    // Para despesas não essenciais
+    const nonEssentialSelect = document.getElementById('nonEssentialCategory');
+    
+    // Limpar opções personalizadas (mantendo as padrão)
+    removeCustomOptions(revenueSelect);
+    removeCustomOptions(essentialSelect);
+    removeCustomOptions(nonEssentialSelect);
+    
+    // Adicionar categorias personalizadas
+    categories.forEach(category => {
+        // Para receitas
+        const revenueOption = document.createElement('option');
+        revenueOption.value = category.name.toLowerCase();
+        revenueOption.textContent = category.name;
+        revenueSelect.appendChild(revenueOption);
+        
+        // Para despesas essenciais
+        const essentialOption = document.createElement('option');
+        essentialOption.value = category.name.toLowerCase();
+        essentialOption.textContent = category.name;
+        essentialSelect.appendChild(essentialOption);
+        
+        // Para despesas não essenciais
+        const nonEssentialOption = document.createElement('option');
+        nonEssentialOption.value = category.name.toLowerCase();
+        nonEssentialOption.textContent = category.name;
+        nonEssentialSelect.appendChild(nonEssentialOption);
+    });
+}
+
+function removeCustomOptions(select) {
+    // Remove apenas as opções personalizadas (mantendo as 4 primeiras)
+    const options = select.options;
+    for (let i = options.length - 1; i >= 4; i--) {
+        select.remove(i);
+    }
+}
 
         function createSampleCategories() {
             categories = [
@@ -5568,6 +5639,7 @@
                 }
             ];
             updateCategoriesGrid();
+            loadCategoriesIntoSelects();
         }
 
         function updateCategoriesGrid() {
@@ -6071,31 +6143,36 @@
             }
         }
 
-        async function deleteTransaction() {
-            const transactionId = document.getElementById('editTransactionId').value;
-            const userId = currentUser.uid;
+        async function deleteTransaction(transactionId = null) {
+    // Se não veio por parâmetro, pega do input
+    const id = transactionId || document.getElementById('editTransactionId').value;
+    if (!id) {
+        showNotification('ID da transação não encontrado', 'error');
+        return;
+    }
+    
+    const userId = currentUser.uid;
 
-            try {
-                await db.collection('users').doc(userId).collection('transactions').doc(transactionId).delete();
-                
-                // Invalidar caches
-                const monthSelect = document.getElementById('monthSelect');
-                const yearSelect = document.getElementById('yearSelect');
-                const selectedMonth = parseInt(monthSelect.value);
-                const selectedYear = parseInt(yearSelect.value);
-                
-                cache.remove(`stats_${userId}_${selectedMonth}_${selectedYear}`);
-                cache.remove(`transactions_${userId}_${selectedMonth}_${selectedYear}`);
-                
-                closeEditTransactionModal();
-                loadTransactions();
-                showNotification('Transação excluída com sucesso!', 'success');
-            } catch (error) {
-                console.error("❌ Erro ao excluir transação:", error);
-                showNotification("Erro ao excluir transação: " + error.message, "error");
-            }
-        }
-
+    try {
+        await db.collection('users').doc(userId).collection('transactions').doc(id).delete();
+        
+        // Invalidar caches
+        const monthSelect = document.getElementById('monthSelect');
+        const yearSelect = document.getElementById('yearSelect');
+        const selectedMonth = parseInt(monthSelect.value);
+        const selectedYear = parseInt(yearSelect.value);
+        
+        cache.remove(`stats_${userId}_${selectedMonth}_${selectedYear}`);
+        cache.remove(`transactions_${userId}_${selectedMonth}_${selectedYear}`);
+        
+        closeEditTransactionModal();
+        loadTransactions();
+        showNotification('Transação excluída com sucesso!', 'success');
+    } catch (error) {
+        console.error("❌ Erro ao excluir transação:", error);
+        showNotification("Erro ao excluir transação: " + error.message, "error");
+    }
+}
         // ===== INICIALIZAÇÃO =====
         document.addEventListener('DOMContentLoaded', function() {
             checkLoggedInUser();
