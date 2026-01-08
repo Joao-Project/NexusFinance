@@ -4576,8 +4576,7 @@
                     const remainingAmount = goal.targetAmount - goal.currentAmount;
                     const monthlyAmount = goal.monthlyAmount || (remainingAmount / goal.timeframe);
                     const isCompleted = goal.currentAmount >= goal.targetAmount;
-                    const progress = (goal.currentAmount / goal.targetAmount) * 100;
-                    const progressPercent = Math.min(progress, 100);
+                    
                     
                     return `
                         <div class="goal-card" onclick="openEditGoalModal('${goal.id}')">
@@ -6265,3 +6264,4 @@ function removeCustomOptions(select) {
     </script>
 </body>
 </html>
+
