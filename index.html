@@ -3042,6 +3042,7 @@
             try {
                 updateSelectedMonthDisplay();
                 updateDashboardStats();
+                updateTransactionsList(); // Atualizar listas de transações quando mudar o mês/ano
             } catch (error) {
                 console.error('❌ Erro em handleDateChange:', error);
                 // Não bloqueia a aplicação, apenas registra o erro
@@ -3772,8 +3773,19 @@
 
         function updateRevenueTransactions() {
             const revenueList = document.getElementById('revenueTransactionsList');
+
+            // Pegar mês e ano selecionados
+            const selectedMonth = parseInt(document.getElementById('monthSelect').value);
+            const selectedYear = parseInt(document.getElementById('yearSelect').value);
+
             const revenueTransactions = transactions
-                .filter(t => t.type === 'revenue')
+                .filter(t => {
+                    const transactionDate = new Date(t.date);
+                    // Filtrar por tipo E por mês/ano
+                    return t.type === 'revenue' &&
+                        transactionDate.getMonth() === selectedMonth &&
+                        transactionDate.getFullYear() === selectedYear;
+                })
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             const revenueTotal = revenueTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -3783,7 +3795,7 @@
                 revenueList.innerHTML = `
                     <div class="empty-state" style="padding: 20px; text-align: center; color: var(--gray);">
                         <i class="fas fa-arrow-down" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
-                        <p>Nenhuma receita cadastrada</p>
+                        <p>Nenhuma receita cadastrada neste mês</p>
                     </div>
                 `;
             } else {
@@ -3811,8 +3823,19 @@
 
         function updateEssentialTransactions() {
             const essentialList = document.getElementById('essentialTransactionsList');
+
+            // Pegar mês e ano selecionados
+            const selectedMonth = parseInt(document.getElementById('monthSelect').value);
+            const selectedYear = parseInt(document.getElementById('yearSelect').value);
+
             const essentialTransactions = transactions
-                .filter(t => t.type === 'essential')
+                .filter(t => {
+                    const transactionDate = new Date(t.date);
+                    // Filtrar por tipo E por mês/ano
+                    return t.type === 'essential' &&
+                        transactionDate.getMonth() === selectedMonth &&
+                        transactionDate.getFullYear() === selectedYear;
+                })
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             const essentialTotal = essentialTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -3822,7 +3845,7 @@
                 essentialList.innerHTML = `
                     <div class="empty-state" style="padding: 20px; text-align: center; color: var(--gray);">
                         <i class="fas fa-home" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
-                        <p>Nenhuma despesa essencial cadastrada</p>
+                        <p>Nenhuma despesa essencial cadastrada neste mês</p>
                     </div>
                 `;
             } else {
@@ -3850,8 +3873,19 @@
 
         function updateNonEssentialTransactions() {
             const nonEssentialList = document.getElementById('nonEssentialTransactionsList');
+
+            // Pegar mês e ano selecionados
+            const selectedMonth = parseInt(document.getElementById('monthSelect').value);
+            const selectedYear = parseInt(document.getElementById('yearSelect').value);
+
             const nonEssentialTransactions = transactions
-                .filter(t => t.type === 'non-essential')
+                .filter(t => {
+                    const transactionDate = new Date(t.date);
+                    // Filtrar por tipo E por mês/ano
+                    return t.type === 'non-essential' &&
+                        transactionDate.getMonth() === selectedMonth &&
+                        transactionDate.getFullYear() === selectedYear;
+                })
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             const nonEssentialTotal = nonEssentialTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -3861,7 +3895,7 @@
                 nonEssentialList.innerHTML = `
                     <div class="empty-state" style="padding: 20px; text-align: center; color: var(--gray);">
                         <i class="fas fa-gamepad" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
-                        <p>Nenhuma despesa não essencial cadastrada</p>
+                        <p>Nenhuma despesa não essencial cadastrada neste mês</p>
                     </div>
                 `;
             } else {
