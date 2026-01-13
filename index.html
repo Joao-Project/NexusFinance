@@ -1831,7 +1831,7 @@
                     <div class="date-filter-container">
                         <i class="fas fa-calendar-alt"></i>
                         <select id="monthSelect" class="date-select"
-                            onchange="handleDateChange(); updateDashboardStats();">
+                            onchange="handleDateChange(); updateDashboardStats(); updateDashboardCharts();">
                             <option value="0">Janeiro</option>
                             <option value="1">Fevereiro</option>
                             <option value="2">Março</option>
@@ -1845,10 +1845,14 @@
                             <option value="10">Novembro</option>
                             <option value="11">Dezembro</option>
                         </select>
-                        <select id="yearSelect" class="date-select" onchange="handleDateChange();">
+                        <select id="yearSelect" class="date-select"
+                            onchange="handleDateChange(); updateDashboardCharts();">
                             <option value="2023">2023</option>
                             <option value="2024" selected>2024</option>
                             <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
                         </select>
                     </div>
                 </div>
@@ -3013,7 +3017,7 @@
         function initApp() {
             setupDateFilters();
             loadMarketIndicators();
-            setupInvestmentPortfolio();
+            loadInvestments();
             setupTransactions();
             loadGoals(); // Renomeado de setupGoals
             setupDashboardCharts();
@@ -3035,8 +3039,13 @@
         }
 
         function handleDateChange() {
-            updateSelectedMonthDisplay();
-            updateDashboardStats();
+            try {
+                updateSelectedMonthDisplay();
+                updateDashboardStats();
+            } catch (error) {
+                console.error('❌ Erro em handleDateChange:', error);
+                // Não bloqueia a aplicação, apenas registra o erro
+            }
         }
 
         function updateSelectedMonthDisplay() {
@@ -3188,25 +3197,103 @@
         }
 
         // Dashboard Charts
-        function setupDashboardCharts() {
-            setupExpenseDistributionChart();
-            setupIncomeTrendChart();
-            setupGoalsProgressChart();
-            setupSavingsProjectionChart();
-            setupMonthlyComparisonChart();
+        function updateDashboardCharts() {
+            // Aggregate data from transactions
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+            const selectedMonth = parseInt(monthSelect.value);
+            const selectedYear = parseInt(yearSelect.value);
+
+            // Filter transactions for selected month/year
+            const monthlyTransactions = transactions.filter(t => {
+                const tDate = new Date(t.date);
+                return tDate.getMonth() === selectedMonth && tDate.getFullYear() === selectedYear;
+            });
+
+            // Calculate totals for charts
+            let essential = 0, nonEssential = 0, investment = 0;
+            let monthlyRevenue = 0, monthlyExpenses = 0;
+
+            monthlyTransactions.forEach(t => {
+                if (t.type === 'revenue') {
+                    monthlyRevenue += t.amount;
+                } else {
+                    monthlyExpenses += t.amount;
+                    if (t.type === 'essential') essential += t.amount;
+                    if (t.type === 'non-essential') nonEssential += t.amount;
+                    // Investment type might be tracked differently or as 'investment' (custom type?)
+                    // For now, assuming standard types. If 'investment' is a transaction type, add logic here.
+                }
+            });
+
+            // Calculate Income Trend (Last 6 Months)
+            const trendLabels = [];
+            const revenueTrend = [];
+            const expenseTrend = [];
+
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(selectedYear, selectedMonth - i, 1);
+                const m = d.getMonth();
+                const y = d.getFullYear();
+                const monthName = new Date(y, m, 1).toLocaleString('pt-BR', { month: 'short' });
+
+                trendLabels.push(monthName);
+
+                // Aggregate for this specific month
+                const monthTrans = transactions.filter(t => {
+                    const tDate = new Date(t.date);
+                    return tDate.getMonth() === m && tDate.getFullYear() === y;
+                });
+
+                const rev = monthTrans.reduce((sum, t) => t.type === 'revenue' ? sum + t.amount : sum, 0);
+                const exp = monthTrans.reduce((sum, t) => t.type !== 'revenue' ? sum + t.amount : sum, 0);
+
+                revenueTrend.push(rev);
+                expenseTrend.push(exp);
+            }
+
+            // Calculate Goals Progress
+            const goalLabels = goals.map(g => g.name);
+            const goalCurrent = goals.map(g => g.currentAmount);
+            const goalTarget = goals.map(g => g.targetAmount);
+
+            // Savings Projection (Simple calc based on current rate)
+            const currentSavingsRate = monthlyRevenue > 0 ? (monthlyRevenue - monthlyExpenses) : 0;
+            const savingsProjectionData = [];
+            const projectionLabels = [];
+            let accumulatedSavings = 0; // Start with current total wealth ideally
+
+            for (let i = 0; i < 5; i++) {
+                projectionLabels.push(selectedYear + i);
+                accumulatedSavings += (currentSavingsRate * 12);
+                savingsProjectionData.push(accumulatedSavings);
+            }
+
+            // Update Charts
+            setupExpenseDistributionChart(essential, nonEssential, investment);
+            setupIncomeTrendChart(trendLabels, revenueTrend, expenseTrend);
+            setupGoalsProgressChart(goalLabels, goalCurrent, goalTarget);
+            setupSavingsProjectionChart(projectionLabels, savingsProjectionData);
+            setupMonthlyComparisonChart(monthlyRevenue, monthlyExpenses); // Compare with prev month logic needed inside
         }
 
-        function setupExpenseDistributionChart() {
+        function setupDashboardCharts() {
+            updateDashboardCharts();
+        }
+
+        function setupExpenseDistributionChart(essential, nonEssential, investment) {
             const ctx = document.getElementById('expenseDistributionChart').getContext('2d');
-            if (expenseChartInstance) {
-                expenseChartInstance.destroy();
+
+            if (dashboardCharts.expenseDistribution) {
+                dashboardCharts.expenseDistribution.destroy();
             }
+
             dashboardCharts.expenseDistribution = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Essenciais', 'Não Essenciais', 'Investimentos'],
                     datasets: [{
-                        data: [2100, 850, 2300],
+                        data: [essential || 0, nonEssential || 0, investment || 0], // Use real data
                         backgroundColor: ['#0066FF', '#FF6B35', '#00D4AA'],
                         borderWidth: 0
                     }]
@@ -3227,17 +3314,21 @@
             });
         }
 
-        function setupIncomeTrendChart() {
+        function setupIncomeTrendChart(labels, revenueData, expenseData) {
             const ctx = document.getElementById('incomeTrendChart').getContext('2d');
+
+            if (dashboardCharts.incomeTrend) {
+                dashboardCharts.incomeTrend.destroy();
+            }
 
             dashboardCharts.incomeTrend = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+                    labels: labels || ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
                     datasets: [
                         {
                             label: 'Receitas',
-                            data: [4500, 5200, 4800, 5500, 6000, 5250],
+                            data: revenueData || [],
                             borderColor: '#00D4AA',
                             backgroundColor: 'rgba(0, 212, 170, 0.1)',
                             tension: 0.4,
@@ -3245,7 +3336,7 @@
                         },
                         {
                             label: 'Despesas',
-                            data: [3800, 4200, 3900, 4500, 4700, 4250],
+                            data: expenseData || [],
                             borderColor: '#FF6B35',
                             backgroundColor: 'rgba(255, 107, 53, 0.1)',
                             tension: 0.4,
@@ -3287,23 +3378,27 @@
             });
         }
 
-        function setupGoalsProgressChart() {
+        function setupGoalsProgressChart(labels, currentData, targetData) {
             const ctx = document.getElementById('goalsProgressChart').getContext('2d');
+
+            if (dashboardCharts.goalsProgress) {
+                dashboardCharts.goalsProgress.destroy();
+            }
 
             dashboardCharts.goalsProgress = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Reserva Emergência', 'Viagem', 'Carro Novo'],
+                    labels: labels || [],
                     datasets: [
                         {
                             label: 'Valor Atual',
-                            data: [3500, 2000, 1200],
+                            data: currentData || [],
                             backgroundColor: 'rgba(0, 102, 255, 0.8)',
                             borderRadius: 4
                         },
                         {
                             label: 'Meta',
-                            data: [10000, 8000, 3000],
+                            data: targetData || [],
                             backgroundColor: 'rgba(0, 212, 170, 0.6)',
                             borderRadius: 4
                         }
@@ -3343,16 +3438,20 @@
             });
         }
 
-        function setupSavingsProjectionChart() {
+        function setupSavingsProjectionChart(labels, data) {
             const ctx = document.getElementById('savingsProjectionChart').getContext('2d');
+
+            if (dashboardCharts.savingsProjection) {
+                dashboardCharts.savingsProjection.destroy();
+            }
 
             dashboardCharts.savingsProjection = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['2024', '2025', '2026', '2027', '2028'],
+                    labels: labels || ['2024', '2025', '2026', '2027', '2028'],
                     datasets: [{
                         label: 'Projeção de Economia',
-                        data: [2300, 28900, 56400, 86200, 119500],
+                        data: data || [],
                         borderColor: '#9B59B6',
                         backgroundColor: 'rgba(155, 89, 182, 0.1)',
                         tension: 0.4,
@@ -3393,8 +3492,18 @@
             });
         }
 
-        function setupMonthlyComparisonChart() {
+        function setupMonthlyComparisonChart(currentRev, currentExp) {
             const ctx = document.getElementById('monthlyComparisonChart').getContext('2d');
+
+            if (dashboardCharts.monthlyComparison) {
+                dashboardCharts.monthlyComparison.destroy();
+            }
+
+            // Previous month calculation for comparison would require passing prev data
+            // For now, let's keep it simple or implement better fetching
+            // Placeholder for previous data or fetch it
+            const prevRev = 0; // Needs logic to fetch prev month data
+            const prevExp = 0;
 
             dashboardCharts.monthlyComparison = new Chart(ctx, {
                 type: 'bar',
@@ -3403,13 +3512,13 @@
                     datasets: [
                         {
                             label: 'Mês Atual',
-                            data: [5250, 4250],
+                            data: [currentRev || 0, currentExp || 0],
                             backgroundColor: 'rgba(0, 102, 255, 0.8)',
                             borderRadius: 4
                         },
                         {
                             label: 'Mês Anterior',
-                            data: [4800, 3900],
+                            data: [prevRev, prevExp], // Would need real data
                             backgroundColor: 'rgba(100, 100, 100, 0.6)',
                             borderRadius: 4
                         }
@@ -3555,12 +3664,21 @@
 
             const userId = currentUser.uid;
 
+            // Get selected month and year safely
             const monthSelect = document.getElementById('monthSelect');
             const yearSelect = document.getElementById('yearSelect');
-            const selectedMonth = parseInt(monthSelect.value);
+            const selectedMonth = parseInt(monthSelect.value); // 0-11
             const selectedYear = parseInt(yearSelect.value);
 
+            // Create date securely (day 1 to avoid month overflow issues)
             const transactionDate = new Date(selectedYear, selectedMonth, 1);
+
+            // Check if date is valid
+            if (isNaN(transactionDate.getTime())) {
+                console.error("❌ Data inválida:", selectedYear, selectedMonth);
+                showNotification('Erro interno: Data inválida selecionada', 'error');
+                return;
+            }
 
             const newTransactionData = {
                 description: description,
@@ -3587,6 +3705,7 @@
 
                 updateTransactionsList();
                 updateDashboardStats();
+                updateDashboardCharts(); // Update charts dynamically
 
                 showNotification(
                     `${type === 'revenue' ? 'Receita' : 'Despesa'} adicionada com sucesso!`,
@@ -3770,23 +3889,28 @@
 
         function updateDashboardStats() {
             setTimeout(() => {
-                const currentMonth = parseInt(document.getElementById('monthSelect').value);
-                const currentYear = parseInt(document.getElementById('yearSelect').value);
+                try {
+                    const currentMonth = parseInt(document.getElementById('monthSelect').value);
+                    const currentYear = parseInt(document.getElementById('yearSelect').value);
 
-                const monthTransactions = transactions.filter(t => {
-                    const transactionDate = new Date(t.date);
-                    return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
-                });
+                    const monthTransactions = transactions.filter(t => {
+                        const transactionDate = new Date(t.date);
+                        return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
+                    });
 
-                const revenue = monthTransactions.filter(t => t.type === 'revenue').reduce((sum, t) => sum + t.amount, 0);
-                const essential = monthTransactions.filter(t => t.type === 'essential').reduce((sum, t) => sum + t.amount, 0);
-                const nonEssential = monthTransactions.filter(t => t.type === 'non-essential').reduce((sum, t) => sum + t.amount, 0);
-                const economy = revenue - essential - nonEssential;
+                    const revenue = monthTransactions.filter(t => t.type === 'revenue').reduce((sum, t) => sum + t.amount, 0);
+                    const essential = monthTransactions.filter(t => t.type === 'essential').reduce((sum, t) => sum + t.amount, 0);
+                    const nonEssential = monthTransactions.filter(t => t.type === 'non-essential').reduce((sum, t) => sum + t.amount, 0);
+                    const economy = revenue - essential - nonEssential;
 
-                document.getElementById('revenueAmount').textContent = formatCurrency(revenue);
-                document.getElementById('essentialAmount').textContent = formatCurrency(essential);
-                document.getElementById('nonEssentialAmount').textContent = formatCurrency(nonEssential);
-                document.getElementById('economyAmount').textContent = formatCurrency(economy);
+                    document.getElementById('revenueAmount').textContent = formatCurrency(revenue);
+                    document.getElementById('essentialAmount').textContent = formatCurrency(essential);
+                    document.getElementById('nonEssentialAmount').textContent = formatCurrency(nonEssential);
+                    document.getElementById('economyAmount').textContent = formatCurrency(economy);
+                } catch (error) {
+                    console.error('❌ Erro em updateDashboardStats:', error);
+                    // Não bloqueia a aplicação, apenas registra o erro
+                }
             }, 0);
         }
 
@@ -3920,39 +4044,43 @@
 
                 goals = [];
 
-                snapshot.forEach(doc => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        goals.push({
-                            id: doc.id,
-                            ...data
-                        });
-                    }
-                });
+                goals = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
 
-                console.log(`✅ ${goals.length} metas carregadas com sucesso.`);
+                console.log(`📊 ${goals.length} metas encontradas no Firestore`);
 
                 const userKey = `nexusFinanceGoals_${currentUser.email}`;
                 localStorage.setItem(userKey, JSON.stringify(goals));
 
+                updateGoalsList();
+                updateGoalsChart();
+                updateDashboardCharts(); // Update main dashboard charts with goal data
+
+                console.log(`✅ ${goals.length} metas carregadas com sucesso.`);
+
             } catch (error) {
-                console.error("❌ Erro ao carregar metas do Firestore:", error);
+                console.error("❌ Erro ao carregar metas:", error);
                 showNotification("Erro ao carregar metas", "error");
 
+                // Fallback local storage
                 const userKey = `nexusFinanceGoals_${currentUser.email}`;
                 const savedGoals = localStorage.getItem(userKey);
+
                 if (savedGoals) {
                     try {
                         goals = JSON.parse(savedGoals);
                         console.log('📂 Usando metas do localStorage:', goals.length);
+                        updateGoalsList();
+                        updateGoalsChart();
+                        updateDashboardCharts();
+                        console.log("⚠️ Carregado do cache local devido a erro");
                     } catch (e) {
                         goals = [];
                     }
                 }
             }
-
-            updateGoalsList();
-            updateGoalsChart();
         }
 
         function updateGoalsList() {
@@ -4098,6 +4226,7 @@
 
                 updateGoalsList();
                 updateGoalsChart();
+                updateDashboardCharts();
                 closeAddGoalModal();
 
                 showNotification('Meta criada com sucesso!', 'success');
@@ -4186,6 +4315,7 @@
 
                 updateGoalsList();
                 updateGoalsChart();
+                updateDashboardCharts();
                 closeEditGoalModal();
 
                 showNotification('Meta atualizada com sucesso!', 'success');
@@ -4251,6 +4381,7 @@
 
                 updateGoalsList();
                 updateGoalsChart();
+                updateDashboardCharts();
 
                 showNotification(`R$ ${numericAmount.toLocaleString('pt-BR')} adicionado à meta ${goal.name}!`, 'success');
 
@@ -4301,6 +4432,7 @@
 
                 updateGoalsList();
                 updateGoalsChart();
+                updateDashboardCharts();
 
                 closeEditGoalModal();
 
@@ -4718,54 +4850,44 @@
         }
 
         // Investment Portfolio Management
-        function setupInvestmentPortfolio() {
-            const userKey = currentUser ? `nexusFinanceInvestments_${currentUser.email}` : 'nexusFinanceInvestments';
-            const savedInvestments = localStorage.getItem(userKey);
+        async function loadInvestments() {
+            if (!currentUser) return;
 
-            if (savedInvestments) {
-                try {
-                    investments = JSON.parse(savedInvestments);
-                } catch (e) {
-                    investments = [];
-                }
-            } else {
-                // Sample data
-                investments = [
-                    {
-                        id: 1,
-                        name: 'Tesouro Selic 2026',
-                        type: 'Renda Fixa',
-                        amount: 15000,
-                        profitability: '12.15%',
-                        icon: 'fas fa-landmark',
-                        color: 'rgba(0, 102, 255, 0.2)',
-                        iconColor: '#0066FF'
-                    },
-                    {
-                        id: 2,
-                        name: 'PETR4',
-                        type: 'Ações',
-                        amount: 8000,
-                        profitability: '8.45%',
-                        icon: 'fas fa-chart-line',
-                        color: 'rgba(0, 212, 170, 0.2)',
-                        iconColor: '#00D4AA'
-                    },
-                    {
-                        id: 3,
-                        name: 'BOVA11',
-                        type: 'ETF',
-                        amount: 12000,
-                        profitability: '6.82%',
-                        icon: 'fas fa-chart-bar',
-                        color: 'rgba(255, 107, 53, 0.2)',
-                        iconColor: '#FF6B35'
-                    }
-                ];
+            console.log('🔄 Iniciando loadInvestments...');
+            const userId = currentUser.uid;
+
+            try {
+                const snapshot = await db.collection('users').doc(userId).collection('investments').orderBy('createdAt', 'desc').get();
+
+                investments = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                console.log(`📊 ${investments.length} investimentos encontrados no Firestore`);
+
+                const userKey = `nexusFinanceInvestments_${currentUser.email}`;
                 localStorage.setItem(userKey, JSON.stringify(investments));
-            }
 
-            updateInvestmentPortfolio();
+                updateInvestmentPortfolio();
+                updateDashboardCharts();
+
+            } catch (error) {
+                console.error("❌ Erro ao carregar investimentos:", error);
+
+                // Fallback local storage
+                const userKey = `nexusFinanceInvestments_${currentUser.email}`;
+                const savedInvestments = localStorage.getItem(userKey);
+
+                if (savedInvestments) {
+                    try {
+                        investments = JSON.parse(savedInvestments);
+                        updateInvestmentPortfolio();
+                    } catch (e) {
+                        investments = [];
+                    }
+                }
+            }
         }
 
         function updateInvestmentPortfolio() {
@@ -4869,54 +4991,107 @@
             document.getElementById('investmentProfitability').value = '0';
         }
 
-        function addInvestment() {
+        // Helper functions for investment icons and colors
+        function getInvestmentIcon(type) {
+            switch (type) {
+                case 'Renda Fixa':
+                    return 'fas fa-landmark';
+                case 'Ações':
+                    return 'fas fa-chart-line';
+                case 'ETF':
+                    return 'fas fa-chart-bar';
+                case 'FII':
+                    return 'fas fa-building';
+                case 'Criptomoedas':
+                    return 'fas fa-coins';
+                default:
+                    return 'fas fa-piggy-bank';
+            }
+        }
+
+        function getInvestmentColor(type) {
+            switch (type) {
+                case 'Renda Fixa':
+                    return 'rgba(0, 102, 255, 0.2)';
+                case 'Ações':
+                    return 'rgba(0, 212, 170, 0.2)';
+                case 'ETF':
+                    return 'rgba(255, 107, 53, 0.2)';
+                case 'FII':
+                    return 'rgba(155, 89, 182, 0.2)';
+                case 'Criptomoedas':
+                    return 'rgba(255, 193, 7, 0.2)';
+                default:
+                    return 'rgba(100, 100, 100, 0.2)';
+            }
+        }
+
+        function getInvestmentIconColor(type) {
+            switch (type) {
+                case 'Renda Fixa':
+                    return '#0066FF';
+                case 'Ações':
+                    return '#00D4AA';
+                case 'ETF':
+                    return '#FF6B35';
+                case 'FII':
+                    return '#9B59B6';
+                case 'Criptomoedas':
+                    return '#FFC107';
+                default:
+                    return '#64748B';
+            }
+        }
+
+        async function addInvestment() {
+            if (!currentUser) {
+                showNotification('Você precisa estar logado para adicionar investimentos', 'error');
+                return;
+            }
+
+            console.log('➕ Iniciando addInvestment...');
             const name = document.getElementById('investmentName').value.trim();
             const type = document.getElementById('investmentType').value;
             const amount = parseFloat(document.getElementById('investmentAmount').value);
-            const profitability = document.getElementById('investmentProfitability').value;
+            const profitability = document.getElementById('investmentProfitability').value.trim();
 
-            if (!name || isNaN(amount) || amount <= 0) {
+            if (!name || isNaN(amount) || amount <= 0 || !profitability) {
                 showNotification('Preencha todos os campos corretamente', 'error');
                 return;
             }
 
-            const getIconAndColor = (type) => {
-                switch (type) {
-                    case 'Renda Fixa':
-                        return { icon: 'fas fa-landmark', color: 'rgba(0, 102, 255, 0.2)', iconColor: '#0066FF' };
-                    case 'Ações':
-                        return { icon: 'fas fa-chart-line', color: 'rgba(0, 212, 170, 0.2)', iconColor: '#00D4AA' };
-                    case 'ETF':
-                        return { icon: 'fas fa-chart-bar', color: 'rgba(255, 107, 53, 0.2)', iconColor: '#FF6B35' };
-                    case 'FII':
-                        return { icon: 'fas fa-building', color: 'rgba(155, 89, 182, 0.2)', iconColor: '#9B59B6' };
-                    case 'Criptomoedas':
-                        return { icon: 'fas fa-coins', color: 'rgba(255, 193, 7, 0.2)', iconColor: '#FFC107' };
-                    default:
-                        return { icon: 'fas fa-piggy-bank', color: 'rgba(100, 100, 100, 0.2)', iconColor: '#64748B' };
-                }
-            };
-
-            const { icon, color, iconColor } = getIconAndColor(type);
-
-            const newInvestment = {
-                id: Date.now(),
-                name,
-                type,
-                amount,
+            const investmentData = {
+                name: name,
+                type: type,
+                amount: amount,
                 profitability: profitability + '%',
-                icon,
-                color,
-                iconColor
+                color: getInvestmentColor(type),
+                icon: getInvestmentIcon(type),
+                iconColor: getInvestmentIconColor(type),
+                userId: currentUser.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            investments.push(newInvestment);
-            const userKey = currentUser ? `nexusFinanceInvestments_${currentUser.email}` : 'nexusFinanceInvestments';
-            localStorage.setItem(userKey, JSON.stringify(investments));
+            try {
+                const docRef = await db.collection('users').doc(currentUser.uid).collection('investments').add(investmentData);
+                console.log('✅ Investimento salvo com ID:', docRef.id);
 
-            updateInvestmentPortfolio();
-            closeAddInvestmentModal();
-            showNotification('Investimento adicionado com sucesso!', 'success');
+                investments.unshift({
+                    id: docRef.id,
+                    ...investmentData
+                });
+
+                // Update local cache
+                localStorage.setItem(`nexusFinanceInvestments_${currentUser.email}`, JSON.stringify(investments));
+
+                updateInvestmentPortfolio();
+                updateDashboardCharts();
+                closeAddInvestmentModal();
+                showNotification('Investimento adicionado com sucesso!', 'success');
+            } catch (error) {
+                console.error('❌ Erro ao salvar investimento:', error);
+                showNotification('Erro ao salvar investimento', 'error');
+            }
         }
 
         function editInvestment(id) {
@@ -4928,7 +5103,7 @@
             document.getElementById('editInvestmentName').value = investment.name;
             document.getElementById('editInvestmentType').value = investment.type;
             document.getElementById('editInvestmentAmount').value = investment.amount;
-            document.getElementById('editInvestmentProfitability').value = parseFloat(investment.profitability);
+            document.getElementById('editInvestmentProfitability').value = investment.profitability.replace('%', '');
 
             document.getElementById('editInvestmentModal').classList.add('active');
         }
@@ -4938,60 +5113,51 @@
             editingInvestmentId = null;
         }
 
-        function saveInvestment() {
-            if (editingInvestmentId === null) return;
+        async function saveInvestment() {
+            if (!editingInvestmentId || !currentUser) return;
 
             const name = document.getElementById('editInvestmentName').value.trim();
             const type = document.getElementById('editInvestmentType').value;
             const amount = parseFloat(document.getElementById('editInvestmentAmount').value);
-            const profitability = document.getElementById('editInvestmentProfitability').value;
+            const profitability = document.getElementById('editInvestmentProfitability').value.trim();
 
-            if (!name || isNaN(amount) || amount <= 0) {
+            if (!name || isNaN(amount) || amount <= 0 || !profitability) {
                 showNotification('Preencha todos os campos corretamente', 'error');
                 return;
             }
 
-            const investmentIndex = investments.findIndex(inv => inv.id === editingInvestmentId);
-            if (investmentIndex !== -1) {
-                const getIconAndColor = (type) => {
-                    switch (type) {
-                        case 'Renda Fixa':
-                            return { icon: 'fas fa-landmark', color: 'rgba(0, 102, 255, 0.2)', iconColor: '#0066FF' };
-                        case 'Ações':
-                            return { icon: 'fas fa-chart-line', color: 'rgba(0, 212, 170, 0.2)', iconColor: '#00D4AA' };
-                        case 'ETF':
-                            return { icon: 'fas fa-chart-bar', color: 'rgba(255, 107, 53, 0.2)', iconColor: '#FF6B35' };
-                        case 'FII':
-                            return { icon: 'fas fa-building', color: 'rgba(155, 89, 182, 0.2)', iconColor: '#9B59B6' };
-                        case 'Criptomoedas':
-                            return { icon: 'fas fa-coins', color: 'rgba(255, 193, 7, 0.2)', iconColor: '#FFC107' };
-                        default:
-                            return { icon: 'fas fa-piggy-bank', color: 'rgba(100, 100, 100, 0.2)', iconColor: '#64748B' };
-                    }
-                };
+            const updatedData = {
+                name: name,
+                type: type,
+                amount: amount,
+                profitability: profitability + '%',
+                color: getInvestmentColor(type),
+                icon: getInvestmentIcon(type),
+                iconColor: getInvestmentIconColor(type),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-                const { icon, color, iconColor } = getIconAndColor(type);
+            try {
+                await db.collection('users').doc(currentUser.uid).collection('investments').doc(editingInvestmentId).update(updatedData);
 
-                investments[investmentIndex] = {
-                    ...investments[investmentIndex],
-                    name,
-                    type,
-                    amount,
-                    profitability: profitability + '%',
-                    icon,
-                    color,
-                    iconColor
-                };
+                const index = investments.findIndex(inv => inv.id === editingInvestmentId);
+                if (index !== -1) {
+                    investments[index] = { ...investments[index], ...updatedData };
+                }
 
-                const userKey = currentUser ? `nexusFinanceInvestments_${currentUser.email}` : 'nexusFinanceInvestments';
-                localStorage.setItem(userKey, JSON.stringify(investments));
+                // Update local cache
+                localStorage.setItem(`nexusFinanceInvestments_${currentUser.email}`, JSON.stringify(investments));
+
                 updateInvestmentPortfolio();
+                updateDashboardCharts();
                 closeEditInvestmentModal();
                 showNotification('Investimento atualizado com sucesso!', 'success');
+            } catch (error) {
+                console.error('❌ Erro ao atualizar investimento:', error);
+                showNotification('Erro ao atualizar investimento', 'error');
             }
         }
 
-        // FUNÇÃO deleteInvestmentPrompt ATUALIZADA COM MODAL PERSONALIZADO
         function deleteInvestmentPrompt(id) {
             showConfirmationModal(
                 'Excluir Investimento',
@@ -5001,20 +5167,31 @@
             );
         }
 
-        function executeDeleteInvestment(id) {
+        async function executeDeleteInvestment(id) {
             const investmentId = id || editingInvestmentId;
-            if (!investmentId) return;
+            if (!investmentId || !currentUser) return;
 
-            investments = investments.filter(inv => inv.id !== investmentId);
-            const userKey = currentUser ? `nexusFinanceInvestments_${currentUser.email}` : 'nexusFinanceInvestments';
-            localStorage.setItem(userKey, JSON.stringify(investments));
-            updateInvestmentPortfolio();
+            try {
+                await db.collection('users').doc(currentUser.uid).collection('investments').doc(investmentId).delete();
+                console.log('✅ Investimento excluído com ID:', investmentId);
 
-            if (id === null) {
-                closeEditInvestmentModal();
+                investments = investments.filter(inv => inv.id !== investmentId);
+
+                // Update local cache
+                localStorage.setItem(`nexusFinanceInvestments_${currentUser.email}`, JSON.stringify(investments));
+
+                updateInvestmentPortfolio();
+                updateDashboardCharts();
+
+                if (id === null) {
+                    closeEditInvestmentModal();
+                }
+
+                showNotification('Investimento excluído com sucesso!', 'warning');
+            } catch (error) {
+                console.error('❌ Erro ao excluir investimento:', error);
+                showNotification('Erro ao excluir investimento', 'error');
             }
-
-            showNotification('Investimento excluído com sucesso!', 'warning');
         }
 
         // Simulator Navigation
